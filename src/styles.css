@@ -1,0 +1,53 @@
+:root {
+  --ink: #1f2a2e; --muted: #5d6b70; --line: #dfe6e7; --bg: #f6f8f8; --card: #fff;
+  --accent: #336f70; --accent-soft: #e3f0f0; --warm: #c8553d; --gold: #b7791f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+code { background: #eef2f2; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+h1 { font-size: 22px; margin: 0; }
+h2 { font-size: 17px; margin: 0 0 8px; }
+h3 { font-size: 14px; margin: 0 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+p { margin: 0 0 8px; }
+.muted { color: var(--muted); } .small { font-size: 13px; }
+header.top { background: var(--card); border-bottom: 1px solid var(--line); padding: 14px 24px; }
+header.top .row { max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.question { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.truemean { text-align: right; }
+.truemean .v { font-size: 22px; font-weight: 700; color: var(--accent); }
+nav.tabs { max-width: 1180px; margin: 14px auto 0; padding: 0 24px; display: flex; gap: 6px; flex-wrap: wrap; }
+nav.tabs button { border: 1px solid var(--line); background: var(--card); padding: 8px 14px; border-radius: 8px; cursor: pointer; font: inherit; color: var(--muted); }
+nav.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+main { max-width: 1180px; margin: 14px auto 40px; padding: 0 24px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+.grid2 { display: grid; grid-template-columns: 290px 1fr; gap: 14px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+label.f { display: block; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+label.f select, label.f input { display: block; width: 100%; margin-top: 3px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; font: inherit; color: var(--ink); background: #fff; }
+.seedrow { display: flex; gap: 6px; } .seedrow input { flex: 1; }
+button.btn { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; font-weight: 600; }
+button.btn.ghost { background: var(--accent-soft); color: var(--accent); }
+.stats { display: flex; gap: 26px; flex-wrap: wrap; margin: 4px 0 10px; }
+.stat .l { font-size: 12px; color: var(--muted); } .stat .v { font-size: 19px; font-weight: 700; }
+.v.truec { color: var(--accent); } .v.samplec { color: var(--warm); }
+.tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); margin-right: 6px; }
+.tag.warm { background: #fbe9e4; color: var(--warm); } .tag.gold { background: #fbf1dc; color: var(--gold); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.target td { background: var(--accent-soft); }
+dl.facts { display: grid; grid-template-columns: 150px 1fr; gap: 8px 14px; margin: 0; }
+dl.facts dt { color: var(--muted); } dl.facts dd { margin: 0; }
+details { margin-top: 8px; } summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.callout { border-left: 4px solid var(--gold); background: #fbf6e9; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; }
+.callout ul { margin: 4px 0 0; padding-left: 18px; }
+.err { border-left: 4px solid var(--warm); background: #fbe9e4; padding: 10px 14px; border-radius: 6px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin-right: 4px; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: baseline; }
+svg text { font-family: inherit; }
+.meta { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.meta b { color: var(--ink); font-weight: 600; }
+footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 0 24px 30px; }
