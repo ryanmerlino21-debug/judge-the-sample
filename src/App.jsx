@@ -110,76 +110,12 @@ function PopulationTab() {
         </ul>
       </div>
 
-      <section className="block">
-        <h2>Required minimum</h2>
-        <p className="sub">Write these yourself in section 1 of <code>DECISIONS.md</code>.</p>
-        <Checklist id="s1-req" items={[
-          <>Your scenario and file: Healthcare costs, <code>data/healthcare_costs.csv</code>.</>,
-          <>What one row means (one person, a beneficiary record) and how many rows (N) there are.</>,
-          <>The target column and its units: <code>charges</code>, in US dollars.</>,
-          <>One sentence defining your finite population, including what it is <em>not</em>.</>,
-          <>The true mean of the target over every row, and how you calculated it.</>,
-          <>What the row order means in your file.</>,
-        ]} />
-      </section>
-
-      <section className="block">
-        <h2>Calculate the true mean</h2>
-        <p>Use any method you can check: open the CSV in a spreadsheet and average the whole target column, or run a short script. To confirm the file loads and see its columns, run the starter's loader in a terminal in your project folder:</p>
-        <pre style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: 4, overflowX: "auto" }}><code>node load_data.mjs data/healthcare_costs.csv</code></pre>
-        <details>
-          <summary>Check your answer (open after you have calculated it)</summary>
-          <p style={{ marginTop: 8 }}><b>Healthcare costs:</b> mean <code>charges</code> over {N.toLocaleString()} people = {money(TRUE_MEAN)}.</p>
-          <p className="small">If yours differs, check you included every row, used the target column, and did not average a column of IDs.</p>
-        </details>
-      </section>
-
-      <section className="block">
-        <h2>Done when</h2>
-        <Checklist id="s1-done" items={[
-          "You downloaded and unzipped the starter, and your CSV opens.",
-          <>Section 1 of <code>DECISIONS.md</code> is complete, in your own words.</>,
-          "Your true mean matches the check above.",
-        ]} />
-      </section>
-
-      <section className="block">
-        <h3>Try it yourself</h3>
-        <p className="sub">Without looking at the card, explain in two sentences what one row is and what the true mean of <code>charges</code> describes. Then name one group of people your population does <em>not</em> describe.</p>
-      </section>
-
-      <section className="block qa">
-        <h2>Common questions</h2>
-        <details open><summary>Why is a whole dataset called a “population” here?</summary>
-          <p style={{ marginTop: 8 }}>Because you can measure all of it, you know the true mean exactly, so you can see how close each sampling method gets. In real work you rarely have this luxury.</p>
-        </details>
-      </section>
-
       <p className="note">
         Source: <code>insurance.csv</code> from Brett Lantz, <em>Machine Learning with R</em> (Packt), via{" "}
         <a href="https://github.com/stedy/Machine-Learning-with-R-datasets" target="_blank" rel="noreferrer">stedy/Machine-Learning-with-R-datasets</a>.
         Described by its author as simulated from US Census demographic statistics. No licence is stated in the source repository; confirm reuse fits your course policy.
       </p>
     </>
-  );
-}
-
-function Checklist({ id, items }) {
-  const [done, setDone] = useState(() => { try { return JSON.parse(localStorage.getItem(id) || "{}"); } catch { return {}; } });
-  const toggle = (i) => { const d = { ...done, [i]: !done[i] }; setDone(d); try { localStorage.setItem(id, JSON.stringify(d)); } catch {} };
-  const count = items.filter((_, i) => done[i]).length;
-  return (
-    <div>
-      <p className="small muted" aria-live="polite">{count} of {items.length} ticked (saved in this browser only)</p>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-        {items.map((t, i) => (
-          <li key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-            <input type="checkbox" id={id + i} checked={!!done[i]} onChange={() => toggle(i)} style={{ marginTop: 5 }} />
-            <label htmlFor={id + i}>{t}</label>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 
