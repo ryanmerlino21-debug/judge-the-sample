@@ -40,25 +40,37 @@ function RefLines({ x, tx, ex, y0, y1 }) {
   );
 }
 
-// ---- 1. Unit grid: one square per person, in file order. Sampled people light up.
-export function WaffleGrid({ n, sampled, colorOf, groupOf, values }) {
-  const cols = 62, rows = Math.ceil(n / cols), W = 900, gap = 2.5, cell = (W - gap * (cols - 1)) / cols, H = rows * (cell + gap) - gap;
+// ---- 1. Every person as a bar, in file order (the "peaks" view). Sampled people are coloured.
+export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est }) {
+  const N = values.length, W = 900, H = 300, L = 50, R = 12, T = 30, B = 34;
+  const top = Math.ceil(Math.max(...values) / 10000) * 10000;
+  const bw = (W - L - R) / N;
+  const Y = (v) => T + (H - T - B) * (1 - v / top);
   const sel = new Set(sampled);
-  const cells = [];
-  for (let i = 0; i < n; i++) {
-    const cx = (i % cols) * (cell + gap), cy = Math.floor(i / cols) * (cell + gap), on = sel.has(i);
-    cells.push(
-      <rect key={i} x={cx} y={cy} width={cell} height={cell} rx="3" style={on ? fill(colorOf(i)) : fill("var(--pop)")} opacity={on ? 1 : 0.55}>
-        {on && <title>{`Row ${i + 1}: ${money0(values[i])}${groupOf ? " · " + groupOf[i] : ""}`}</title>}
-      </rect>
-    );
-  }
+  const ticks = niceTicks(0, top, 4);
+  const halo = { stroke: "var(--surface)", strokeWidth: 4, paintOrder: "stroke" };
   return (
-    <svg viewBox={`0 0 ${W} ${H + 22}`} role="img" aria-label={`${n} squares, one per person in file order; ${sampled.length} sampled people are coloured`}>
-      <g>{cells}</g>
-      <text x="0" y={H + 16} fontSize="11" style={fill("var(--muted)")}>row 1</text>
-      <text x={W / 2} y={H + 16} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>read left to right, top to bottom, in file order →</text>
-      <text x={W} y={H + 16} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {n.toLocaleString()}</text>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="One bar per person in file order; bar height is charges; sampled people are coloured">
+      {ticks.map((t) => (
+        <g key={t}>
+          <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} strokeWidth="1" style={stroke("var(--grid)")} />
+          <text x={L - 8} y={Y(t) + 4} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{moneyK(t)}</text>
+        </g>
+      ))}
+      {values.map((v, i) => !sel.has(i) && <rect key={i} x={L + i * bw} y={Y(v)} width={Math.max(bw, 0.7)} height={H - B - Y(v)} style={fill("var(--pop)")} shapeRendering="crispEdges" />)}
+      {sampled.map((i) => (
+        <rect key={"s" + i} x={L + i * bw - 0.5} y={Y(values[i])} width={Math.max(bw, 0.7) + 1.4} height={H - B - Y(values[i])} rx="1" style={fill(colorOf(i))}>
+          <title>{`Row ${i + 1}: ${money0(values[i])}${groupOf ? " · " + groupOf[i] : ""}`}</title>
+        </rect>
+      ))}
+      <line x1={L} x2={W - R} y1={Y(trueMean)} y2={Y(trueMean)} strokeWidth="2" strokeDasharray="6 4" style={stroke("var(--ink2)")} />
+      {est != null && <line x1={L} x2={W - R} y1={Y(est)} y2={Y(est)} strokeWidth="2.2" style={stroke("var(--ink)")} />}
+      <text x={W - R} y={Y(trueMean) - 8} fontSize="12" fontWeight="700" textAnchor="end" style={{ ...fill("var(--ink2)"), ...halo }}>True mean {money0(trueMean)}</text>
+      {est != null && <text x={L + 6} y={Y(est) - 8} fontSize="12" fontWeight="700" style={{ ...fill("var(--ink)"), ...halo }}>Sample {money0(est)}</text>}
+      <line x1={L} x2={W - R} y1={H - B} y2={H - B} strokeWidth="1" style={stroke("var(--axis)")} />
+      <text x={L} y={H - 12} fontSize="11" style={fill("var(--muted)")}>row 1</text>
+      <text x={(L + W - R) / 2} y={H - 12} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>file order →</text>
+      <text x={W - R} y={H - 12} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {N.toLocaleString()}</text>
     </svg>
   );
 }

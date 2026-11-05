@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
-import { DistributionPair, WaffleGrid, SegBar, ShareBars, SimpleHistogram, StripRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
+import { DistributionPair, RowBars, SegBar, ShareBars, SimpleHistogram, StripRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
 import { BannerArt } from "./art.jsx";
 
 const N = population.values.length;
@@ -186,12 +186,12 @@ function ExploreTab() {
 
           <section className="block">
             <h2>Who is in the sample?</h2>
-            <p className="sub">Every square is one person, in file order. The {idx.length} sampled people are lit up.
+            <p className="sub">Every bar is one person, in file order; bar height is <code>{TARGET}</code>. The {idx.length} sampled people are the coloured bars.
               {method === "systematic" && " The file order has no documented meaning (it is not a time sequence), so stepping through it means something different from sampling a chronological record."}</p>
             <div className="chart">
-              <WaffleGrid n={N} sampled={idx} colorOf={colorOf} groupOf={groupOf} values={population.values} />
+              <RowBars values={population.values} sampled={idx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={sample.estimate} />
               <div className="legend">
-                <span><span className="sw sq" style={{ background: "var(--pop)", opacity: 0.55 }} />not sampled</span>
+                <span><span className="sw sq" style={{ background: "var(--pop)" }} />not sampled</span>
                 {groupOf ? names.map((g) => <span key={g}><span className="sw sq" style={{ background: colors[g] }} />sampled · {g}</span>) : <span><span className="sw sq" style={{ background: ACCENT }} />sampled</span>}
               </div>
             </div>
