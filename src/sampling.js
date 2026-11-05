@@ -220,3 +220,15 @@ export function repeatedResult({ method, pop, n, reps, seed, strataCol }) {
   }
   return { method, n, seed: type === "exact" ? null : seed, type, count, settings, trueMean: tm, estimates, ...summarize(estimates, tm) };
 }
+
+// ---------- descriptive summary (for display) ----------
+export function quantile(sorted, q) {
+  const pos = (sorted.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+}
+export function describe(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const m = mean(values);
+  const sd = Math.sqrt(values.reduce((a, v) => a + (v - m) ** 2, 0) / values.length); // population SD (divides by N)
+  return { n: values.length, mean: m, sd, min: sorted[0], q1: quantile(sorted, 0.25), median: quantile(sorted, 0.5), q3: quantile(sorted, 0.75), max: sorted[sorted.length - 1] };
+}

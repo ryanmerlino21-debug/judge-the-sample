@@ -129,3 +129,10 @@ test("real data file parses (size and numeric target only)", () => {
   assert.equal(ls.length, 1338);
   assert.ok(ls.every((l) => Number.isFinite(Number(l.split(",")[t]))));
 });
+
+test("describe: known-answer summary", () => {
+  const d = S.describe([1, 2, 3, 4, 5]);
+  assert.equal(d.median, 3); assert.equal(d.min, 1); assert.equal(d.max, 5);
+  assert.equal(d.q1, 2); assert.equal(d.q3, 4);
+  assert.ok(Math.abs(d.sd - Math.sqrt(2)) < 1e-12);
+});

@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
 import { DistributionPair, RowBars, SegBar, ShareBars, SimpleHistogram, StripRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
-import { BannerArt } from "./art.jsx";
 
 const N = population.values.length;
 const TRUE_MEAN = S.trueMean(population.values);
@@ -18,10 +17,10 @@ function PopulationTab() {
   return (
     <>
       <div className="cards">
-        <div className="stat c1"><span className="ic">👥</span><div className="v">{N.toLocaleString()}</div><div className="l">people in the file (N)</div></div>
-        <div className="stat c2"><span className="ic">💵</span><div className="v">{money(TRUE_MEAN)}</div><div className="l">true mean of charges</div></div>
-        <div className="stat c3"><span className="ic">🧬</span><div className="v">{GROUP_COLUMNS.length}</div><div className="l">group columns to stratify on</div></div>
-        <div className="stat c4"><span className="ic">📋</span><div className="v">9</div><div className="l">columns per person</div></div>
+        <div className="stat c1"><div className="l">people in the file (N)</div><div className="v">{N.toLocaleString()}</div></div>
+        <div className="stat c2"><div className="l">true mean of charges</div><div className="v">{money(TRUE_MEAN)}</div></div>
+        <div className="stat c3"><div className="l">group columns to stratify on</div><div className="v">{GROUP_COLUMNS.length}</div></div>
+        <div className="stat c4"><div className="l">columns per person</div><div className="v">9</div></div>
       </div>
 
       <section className="block">
@@ -61,6 +60,24 @@ function PopulationTab() {
       </section>
 
       <section className="block">
+        <h2>Summary of charges across all {N.toLocaleString()} people</h2>
+        <p className="sub">Descriptive numbers for the whole file, in US dollars. SD divides by N because this is the whole population.</p>
+        <SummaryGrid d={POP_STATS} />
+        <details>
+          <summary>Charges by group (mean, median and size of each group)</summary>
+          {GROUP_COLUMNS.map((c) => (
+            <table key={c} style={{ marginTop: 10 }}>
+              <thead><tr><th><code>{c}</code></th><th className="num">People</th><th className="num">Share</th><th className="num">Mean charges</th><th className="num">Median charges</th></tr></thead>
+              <tbody>{S.strataOf(population.groups[c]).sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true })).map((g) => {
+                const d = S.describe(g.members.map((i) => population.values[i]));
+                return <tr key={g.name}><td>{g.name}</td><td className="num">{g.size.toLocaleString()}</td><td className="num">{((100 * g.size) / N).toFixed(1)}%</td><td className="num">{money(d.mean)}</td><td className="num">{money(d.median)}</td></tr>;
+              })}</tbody>
+            </table>
+          ))}
+        </details>
+      </section>
+
+      <section className="block">
         <h2>Columns in <code>healthcare_costs.csv</code></h2>
         <table>
           <thead><tr><th>Column</th><th>Meaning</th><th>Units / values</th></tr></thead>
@@ -94,8 +111,48 @@ function PopulationTab() {
       </div>
 
       <section className="block">
+        <h2>Required minimum</h2>
+        <p className="sub">Write these yourself in section 1 of <code>DECISIONS.md</code>.</p>
+        <Checklist id="s1-req" items={[
+          <>Your scenario and file: Healthcare costs, <code>data/healthcare_costs.csv</code>.</>,
+          <>What one row means (one person, a beneficiary record) and how many rows (N) there are.</>,
+          <>The target column and its units: <code>charges</code>, in US dollars.</>,
+          <>One sentence defining your finite population, including what it is <em>not</em>.</>,
+          <>The true mean of the target over every row, and how you calculated it.</>,
+          <>What the row order means in your file.</>,
+        ]} />
+      </section>
+
+      <section className="block">
+        <h2>Calculate the true mean</h2>
+        <p>Use any method you can check: open the CSV in a spreadsheet and average the whole target column, or run a short script. To confirm the file loads and see its columns, run the starter's loader in a terminal in your project folder:</p>
+        <pre style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: 4, overflowX: "auto" }}><code>node load_data.mjs data/healthcare_costs.csv</code></pre>
+        <details>
+          <summary>Check your answer (open after you have calculated it)</summary>
+          <p style={{ marginTop: 8 }}><b>Healthcare costs:</b> mean <code>charges</code> over {N.toLocaleString()} people = {money(TRUE_MEAN)}.</p>
+          <p className="small">If yours differs, check you included every row, used the target column, and did not average a column of IDs.</p>
+        </details>
+      </section>
+
+      <section className="block">
+        <h2>Done when</h2>
+        <Checklist id="s1-done" items={[
+          "You downloaded and unzipped the starter, and your CSV opens.",
+          <>Section 1 of <code>DECISIONS.md</code> is complete, in your own words.</>,
+          "Your true mean matches the check above.",
+        ]} />
+      </section>
+
+      <section className="block">
         <h3>Try it yourself</h3>
         <p className="sub">Without looking at the card, explain in two sentences what one row is and what the true mean of <code>charges</code> describes. Then name one group of people your population does <em>not</em> describe.</p>
+      </section>
+
+      <section className="block qa">
+        <h2>Common questions</h2>
+        <details open><summary>Why is a whole dataset called a “population” here?</summary>
+          <p style={{ marginTop: 8 }}>Because you can measure all of it, you know the true mean exactly, so you can see how close each sampling method gets. In real work you rarely have this luxury.</p>
+        </details>
       </section>
 
       <p className="note">
@@ -106,6 +163,37 @@ function PopulationTab() {
     </>
   );
 }
+
+function Checklist({ id, items }) {
+  const [done, setDone] = useState(() => { try { return JSON.parse(localStorage.getItem(id) || "{}"); } catch { return {}; } });
+  const toggle = (i) => { const d = { ...done, [i]: !done[i] }; setDone(d); try { localStorage.setItem(id, JSON.stringify(d)); } catch {} };
+  const count = items.filter((_, i) => done[i]).length;
+  return (
+    <div>
+      <p className="small muted" aria-live="polite">{count} of {items.length} ticked (saved in this browser only)</p>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {items.map((t, i) => (
+          <li key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+            <input type="checkbox" id={id + i} checked={!!done[i]} onChange={() => toggle(i)} style={{ marginTop: 5 }} />
+            <label htmlFor={id + i}>{t}</label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SummaryGrid({ d }) {
+  const f = (x) => money(x);
+  return (
+    <div className="summary-grid">
+      {[["People", d.n.toLocaleString()], ["Mean", f(d.mean)], ["SD", f(d.sd)], ["Minimum", f(d.min)], ["25th percentile", f(d.q1)], ["Median", f(d.median)], ["75th percentile", f(d.q3)], ["Maximum", f(d.max)]].map(([k, v]) => (
+        <div key={k}><div className="k">{k}</div><div className="n">{v}</div></div>
+      ))}
+    </div>
+  );
+}
+const POP_STATS = S.describe(population.values);
 
 // --------------------------------------------------------------- Explore
 function SeedField({ seed, setSeed }) {
@@ -179,10 +267,13 @@ function ExploreTab() {
       ) : (
         <>
           <div className="cards three">
-            <div className="stat c2"><span className="ic">🎯</span><div className="l"><span className="key dash" /> True mean · all {N.toLocaleString()} people</div><div className="v">{money(TRUE_MEAN)}</div></div>
-            <div className="stat c1"><span className="ic">🧪</span><div className="l"><span className="key" /> This sample's estimate · single sample</div><div className="v">{money(sample.estimate)}</div></div>
-            <div className="stat c5"><span className="ic">↔️</span><div className="l">Estimate − true mean</div><div className="v">{signed(sample.estimate - TRUE_MEAN)}</div></div>
+            <div className="stat c2"><div className="l"><span className="key dash" /> True mean · all {N.toLocaleString()} people</div><div className="v">{money(TRUE_MEAN)}</div></div>
+            <div className="stat c1"><div className="l"><span className="key" /> This sample's estimate · single sample</div><div className="v">{money(sample.estimate)}</div></div>
+            <div className="stat c5"><div className="l">Estimate − true mean</div><div className="v">{signed(sample.estimate - TRUE_MEAN)}</div></div>
           </div>
+
+          <SummaryGrid d={S.describe(idx.map((i) => population.values[i]))} />
+          <p className="small muted" style={{ marginTop: -6 }}>Numbers above describe the charges of the sampled people only (this single sample). For comparison, everyone: median {money(POP_STATS.median)}, SD {money(POP_STATS.sd)}.</p>
 
           <section className="block">
             <h2>Who is in the sample?</h2>
@@ -362,7 +453,7 @@ function StripAxis({ domain }) {
 }
 
 // ------------------------------------------------------------------ Shell
-const TABS = [["pop", "The population", "🩺"], ["explore", "Explore a sample", "🔍"], ["methods", "Compare methods", "⚖️"], ["size", "Sample size", "📏"]];
+const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "pop");
@@ -371,14 +462,13 @@ export default function App() {
     <div className="wrap">
       <header className="banner">
         <div className="bn-text">
-          <div className="eyebrow">Healthcare costs · 1,338 people · one question</div>
+          <div className="eyebrow">Sampling activity · Healthcare costs · N = 1,338</div>
           <h1>Judge the Sample</h1>
           <div className="question">Which sampling method would you trust for this population, at what sample size, and with what limits?</div>
         </div>
-        <BannerArt />
       </header>
       <nav className="tabs">
-        {TABS.map(([k, label, icon]) => <button key={k} className={tab === k ? "on t-" + k : "t-" + k} onClick={() => go(k)}><span>{icon}</span> {label}</button>)}
+        {TABS.map(([k, label]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => go(k)}>{label}</button>)}
       </nav>
       <main>
         {tab === "pop" && <PopulationTab />}
