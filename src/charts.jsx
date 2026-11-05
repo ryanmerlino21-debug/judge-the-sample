@@ -40,37 +40,39 @@ function RefLines({ x, tx, ex, y0, y1 }) {
   );
 }
 
-// ---- 1. Every person, in file order (dot plot). Sampled dots are the emphasis.
-export function OrderDots({ values, sampled, colorOf, groupOf, trueMean, est }) {
-  const W = 900, H = 300, L = 48, R = 12, T = 30, B = 34, N = values.length;
-  const top = Math.ceil(Math.max(...values) / 10000) * 10000;
-  const X = (i) => L + ((i + 0.5) / N) * (W - L - R);
-  const Y = (v) => T + (H - T - B) * (1 - v / top);
-  const x = (v) => v; // placeholder for RefLines signature
-  const yAt = (v) => Y(v);
-  const ticks = niceTicks(0, top, 4);
+// ---- 1. Unit grid: one square per person, in file order. Sampled people light up.
+export function WaffleGrid({ n, sampled, colorOf, groupOf, values }) {
+  const cols = 62, rows = Math.ceil(n / cols), W = 900, gap = 2.5, cell = (W - gap * (cols - 1)) / cols, H = rows * (cell + gap) - gap;
+  const sel = new Set(sampled);
+  const cells = [];
+  for (let i = 0; i < n; i++) {
+    const cx = (i % cols) * (cell + gap), cy = Math.floor(i / cols) * (cell + gap), on = sel.has(i);
+    cells.push(
+      <rect key={i} x={cx} y={cy} width={cell} height={cell} rx="3" style={on ? fill(colorOf(i)) : fill("var(--pop)")} opacity={on ? 1 : 0.55}>
+        {on && <title>{`Row ${i + 1}: ${money0(values[i])}${groupOf ? " · " + groupOf[i] : ""}`}</title>}
+      </rect>
+    );
+  }
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Every person in file order; height is charges; sampled people are highlighted">
-      {ticks.map((t) => (
-        <g key={t}>
-          <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} strokeWidth="1" style={stroke("var(--grid)")} />
-          <text x={L - 8} y={Y(t) + 4} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{moneyK(t)}</text>
-        </g>
-      ))}
-      {values.map((v, i) => <circle key={i} cx={X(i)} cy={Y(v)} r="1.7" style={fill("var(--pop)")} />)}
-      <line x1={L} x2={W - R} y1={yAt(trueMean)} y2={yAt(trueMean)} strokeWidth="1.5" strokeDasharray="5 4" style={stroke("var(--ink2)")} />
-      {est != null && <line x1={L} x2={W - R} y1={yAt(est)} y2={yAt(est)} strokeWidth="2" style={stroke("var(--ink)")} />}
-      {sampled.map((i) => (
-        <circle key={"s" + i} cx={X(i)} cy={Y(values[i])} r="4" strokeWidth="1.5" style={{ ...fill(colorOf(i)), ...stroke("var(--surface)") }}>
-          <title>{`Row ${i + 1}: ${money0(values[i])}${groupOf ? " · " + groupOf[i] : ""}`}</title>
-        </circle>
-      ))}
-      <text x={W - R} y={yAt(trueMean) - 6} fontSize="12" fontWeight="600" textAnchor="end" style={{ ...fill("var(--ink2)"), stroke: "var(--surface)", strokeWidth: 4, paintOrder: "stroke" }}>True mean {money0(trueMean)}</text>
-      {est != null && <text x={L + 4} y={yAt(est) - 6} fontSize="12" fontWeight="600" style={{ ...fill("var(--ink)"), stroke: "var(--surface)", strokeWidth: 4, paintOrder: "stroke" }}>Sample {money0(est)}</text>}
-      <text x={L} y={H - 8} fontSize="11" style={fill("var(--muted)")}>row 1</text>
-      <text x={(L + W - R) / 2} y={H - 8} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>row number in the file (file order) →</text>
-      <text x={W - R} y={H - 8} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {N.toLocaleString()}</text>
-      <text x={L - 8} y={14} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>charges</text>
+    <svg viewBox={`0 0 ${W} ${H + 22}`} role="img" aria-label={`${n} squares, one per person in file order; ${sampled.length} sampled people are coloured`}>
+      <g>{cells}</g>
+      <text x="0" y={H + 16} fontSize="11" style={fill("var(--muted)")}>row 1</text>
+      <text x={W / 2} y={H + 16} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>read left to right, top to bottom, in file order →</text>
+      <text x={W} y={H + 16} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {n.toLocaleString()}</text>
+    </svg>
+  );
+}
+
+// One whole split into parts (thin segmented bar).
+export function SegBar({ parts }) {
+  const total = parts.reduce((a, p) => a + p.count, 0), W = 600, g = 2;
+  let x = 0;
+  return (
+    <svg viewBox={`0 0 ${W} 14`} role="img" aria-label={parts.map((p) => `${p.name} ${p.count}`).join(", ")}>
+      {parts.map((p) => {
+        const w = (p.count / total) * W; const r = <rect key={p.name} x={x} y="0" width={Math.max(w - g, 1)} height="14" rx="7" style={fill(p.color)}><title>{`${p.name}: ${p.count.toLocaleString()} (${((100 * p.count) / total).toFixed(1)}%)`}</title></rect>;
+        x += w; return r;
+      })}
     </svg>
   );
 }

@@ -6,6 +6,8 @@
   --accent: #2a78d6;         /* the sample: emphasis */
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
   --wash: #eef4fc;
+  --teal: #0f9d8a; --violet: #7c5cd6; --coral: #f0654d; --sun: #f5a524;
+  --t1: #e6f0fd; --t2: #dff5f0; --t3: #efe9fb; --t4: #fff0d9; --t5: #fde8e4;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -13,6 +15,7 @@
     --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10);
     --pop: #4a4945; --accent: #3987e5;
+    --t1: #15263d; --t2: #11322d; --t3: #231d3d; --t4: #3a2b10; --t5: #3c1f1a;
     --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --wash: #17212e;
   }
 }
@@ -87,3 +90,36 @@ footer { color: var(--muted); font-size: 12.5px; padding: 20px 0 40px; border-to
 .strip-grid .num { text-align: right; font-weight: 600; }
 .strip-grid .name { font-weight: 600; } .strip-grid .name small { display: block; font-weight: 400; color: var(--ink2); font-size: 12px; line-height: 1.3; }
 @media (max-width: 700px) { .strip-grid { grid-template-columns: 110px 1fr 72px 72px 72px; } }
+
+/* ---- colourful banner, tabs, cards ---- */
+body { background: radial-gradient(1200px 400px at 90% -10%, color-mix(in srgb, var(--violet) 14%, transparent), transparent), radial-gradient(900px 400px at -10% 0%, color-mix(in srgb, var(--teal) 14%, transparent), transparent), var(--page); }
+.banner { margin-top: 24px; border-radius: 22px; padding: 30px 34px; display: flex; align-items: center; justify-content: space-between; gap: 20px; color: #fff; background: linear-gradient(120deg, #0f9d8a 0%, #2a78d6 55%, #7c5cd6 100%); box-shadow: 0 14px 34px -14px rgba(42,120,214,.55); overflow: hidden; }
+.banner h1 { font-size: 44px; line-height: 1.05; margin: 6px 0 10px; letter-spacing: -.02em; }
+.banner .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.banner .question { font-size: 17px; max-width: 560px; opacity: .95; }
+.banner .art { width: 300px; flex: none; }
+@media (max-width: 760px) { .banner .art { display: none; } .banner h1 { font-size: 34px; } .banner { padding: 24px; } }
+nav.tabs { border: 0; gap: 8px; margin: 18px 0 26px; }
+nav.tabs button { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 9px 16px; margin: 0; font-weight: 600; color: var(--ink2); }
+nav.tabs button.on { color: #fff; border-color: transparent; }
+nav.tabs button.on.t-pop { background: var(--teal); } nav.tabs button.on.t-explore { background: #2a78d6; }
+nav.tabs button.on.t-methods { background: var(--violet); } nav.tabs button.on.t-size { background: var(--coral); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 30px; }
+.cards.three { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.stat { position: relative; border-radius: 16px; padding: 16px 18px; border: 1px solid var(--border); }
+.stat .ic { position: absolute; right: 14px; top: 10px; font-size: 26px; }
+.stat .v { font-size: 30px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; margin-top: 4px; }
+.stat .l { font-size: 13px; color: var(--ink2); display: flex; align-items: center; gap: 6px; max-width: 85%; }
+.stat.c1 { background: var(--t1); } .stat.c2 { background: var(--t2); } .stat.c3 { background: var(--t3); } .stat.c4 { background: var(--t4); } .stat.c5 { background: var(--t5); }
+section.block > h2 { padding-left: 12px; border-left: 5px solid var(--teal); }
+main > section.block:nth-of-type(3n+2) > h2 { border-left-color: var(--accent); }
+main > section.block:nth-of-type(3n) > h2 { border-left-color: var(--violet); }
+.chart { box-shadow: 0 6px 20px -14px rgba(0,0,0,.4); }
+.chart.groups { display: grid; gap: 18px; }
+.grow { display: grid; grid-template-columns: 110px 1fr; gap: 14px; align-items: center; }
+.grow .gname { font-size: 13px; }
+@media (max-width: 700px) { .grow { grid-template-columns: 1fr; gap: 4px; } }
+.toolbar { border-top: 4px solid var(--accent); }
+.tag.gold { background: var(--t4); }
+.stat .v { font-size: 26px; padding-right: 36px; }
+.stat .ic { top: 12px; font-size: 22px; }

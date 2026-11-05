@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
-import { DistributionPair, OrderDots, ShareBars, SimpleHistogram, StripRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
+import { DistributionPair, WaffleGrid, SegBar, ShareBars, SimpleHistogram, StripRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
+import { BannerArt } from "./art.jsx";
 
 const N = population.values.length;
 const TRUE_MEAN = S.trueMean(population.values);
@@ -16,6 +17,13 @@ const groupCounts = Object.fromEntries(
 function PopulationTab() {
   return (
     <>
+      <div className="cards">
+        <div className="stat c1"><span className="ic">👥</span><div className="v">{N.toLocaleString()}</div><div className="l">people in the file (N)</div></div>
+        <div className="stat c2"><span className="ic">💵</span><div className="v">{money(TRUE_MEAN)}</div><div className="l">true mean of charges</div></div>
+        <div className="stat c3"><span className="ic">🧬</span><div className="v">{GROUP_COLUMNS.length}</div><div className="l">group columns to stratify on</div></div>
+        <div className="stat c4"><span className="ic">📋</span><div className="v">9</div><div className="l">columns per person</div></div>
+      </div>
+
       <section className="block">
         <h2>Healthcare costs <span className="tag gold">Public teaching data, simulated by its author</span></h2>
         <p className="sub">A health-plan analyst wants to estimate average medical charges per person in this list without reviewing every record.</p>
@@ -28,6 +36,22 @@ function PopulationTab() {
           <dt>Group columns</dt>
           <dd>{GROUP_COLUMNS.map((c) => <div key={c}><code>{c}</code>: {groupCounts[c].map(([g, k]) => `${g} ${k.toLocaleString()}`).join(", ")}</div>)}</dd>
         </dl>
+      </section>
+
+      <section className="block">
+        <h2>How the 1,338 people split into groups</h2>
+        <p className="sub">Each bar is the whole file; each coloured piece is one group. Stratified sampling uses one of these columns.</p>
+        <div className="chart groups">
+          {GROUP_COLUMNS.map((c) => (
+            <div key={c} className="grow">
+              <div className="gname"><code>{c}</code></div>
+              <div>
+                <SegBar parts={groupCounts[c].map(([g, k], i) => ({ name: g, count: k, color: SLOTS[i % SLOTS.length] }))} />
+                <div className="legend">{groupCounts[c].map(([g, k], i) => <span key={g}><span className="sw" style={{ background: SLOTS[i % SLOTS.length] }} />{g} · {k.toLocaleString()}</span>)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="block">
@@ -154,30 +178,21 @@ function ExploreTab() {
         <div className="err"><b>Can't draw this sample.</b> {error}. Choose a larger n, or a different stratification column.</div>
       ) : (
         <>
-          <div className="hero">
-            <div>
-              <div className="lab"><span className="key dash" /> True mean · all {N.toLocaleString()} people</div>
-              <div className="big" style={{ color: "var(--ink2)" }}>{money(TRUE_MEAN)}</div>
-            </div>
-            <div>
-              <div className="lab"><span className="key" /> This sample's estimate · single sample</div>
-              <div className="big">{money(sample.estimate)}</div>
-            </div>
-            <div>
-              <div className="lab">Estimate − true mean</div>
-              <div className="mid">{signed(sample.estimate - TRUE_MEAN)}</div>
-            </div>
+          <div className="cards three">
+            <div className="stat c2"><span className="ic">🎯</span><div className="l"><span className="key dash" /> True mean · all {N.toLocaleString()} people</div><div className="v">{money(TRUE_MEAN)}</div></div>
+            <div className="stat c1"><span className="ic">🧪</span><div className="l"><span className="key" /> This sample's estimate · single sample</div><div className="v">{money(sample.estimate)}</div></div>
+            <div className="stat c5"><span className="ic">↔️</span><div className="l">Estimate − true mean</div><div className="v">{signed(sample.estimate - TRUE_MEAN)}</div></div>
           </div>
 
           <section className="block">
             <h2>Who is in the sample?</h2>
-            <p className="sub">Every person in the file is a dot; height is <code>{TARGET}</code>. The {idx.length} sampled people are the large coloured dots.
+            <p className="sub">Every square is one person, in file order. The {idx.length} sampled people are lit up.
               {method === "systematic" && " The file order has no documented meaning (it is not a time sequence), so stepping through it means something different from sampling a chronological record."}</p>
             <div className="chart">
-              <OrderDots values={population.values} sampled={idx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={sample.estimate} />
+              <WaffleGrid n={N} sampled={idx} colorOf={colorOf} groupOf={groupOf} values={population.values} />
               <div className="legend">
-                <span><span className="sw" style={{ background: "var(--pop)" }} />everyone in the file</span>
-                {groupOf ? names.map((g) => <span key={g}><span className="sw" style={{ background: colors[g] }} />sampled · {g}</span>) : <span><span className="sw" style={{ background: ACCENT }} />sampled</span>}
+                <span><span className="sw sq" style={{ background: "var(--pop)", opacity: 0.55 }} />not sampled</span>
+                {groupOf ? names.map((g) => <span key={g}><span className="sw sq" style={{ background: colors[g] }} />sampled · {g}</span>) : <span><span className="sw sq" style={{ background: ACCENT }} />sampled</span>}
               </div>
             </div>
           </section>
@@ -347,20 +362,24 @@ function StripAxis({ domain }) {
 }
 
 // ------------------------------------------------------------------ Shell
-const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"]];
+const TABS = [["pop", "The population", "🩺"], ["explore", "Explore a sample", "🔍"], ["methods", "Compare methods", "⚖️"], ["size", "Sample size", "📏"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "pop");
   const go = (k) => { setTab(k); history.replaceState(null, "", "#" + k); };
   return (
     <div className="wrap">
-      <header className="top">
-        <h1>Judge the Sample</h1>
-        <div className="question">Which sampling method would you trust for this population, at what sample size, and with what limits?</div>
-        <nav className="tabs">
-          {TABS.map(([k, label]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => go(k)}>{label}</button>)}
-        </nav>
+      <header className="banner">
+        <div className="bn-text">
+          <div className="eyebrow">Healthcare costs · 1,338 people · one question</div>
+          <h1>Judge the Sample</h1>
+          <div className="question">Which sampling method would you trust for this population, at what sample size, and with what limits?</div>
+        </div>
+        <BannerArt />
       </header>
+      <nav className="tabs">
+        {TABS.map(([k, label, icon]) => <button key={k} className={tab === k ? "on t-" + k : "t-" + k} onClick={() => go(k)}><span>{icon}</span> {label}</button>)}
+      </nav>
       <main>
         {tab === "pop" && <PopulationTab />}
         {tab === "explore" && <ExploreTab />}
