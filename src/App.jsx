@@ -247,6 +247,7 @@ function ExploreTab() {
         </label>
         <label>Sample size n (1–{N.toLocaleString()})
           <input type="number" min="1" max={N} value={n} onChange={(e) => setN(e.target.value === "" ? "" : Number(e.target.value))} />
+          <div className="chips">{[1, 10, 100].map((v) => <button key={v} type="button" className={nn === v ? "on" : ""} onClick={() => setN(v)}>n = {v}</button>)}</div>
         </label>
         <SeedField seed={seed} setSeed={setSeed} />
         {method === "stratified" && (
@@ -283,6 +284,8 @@ function ExploreTab() {
               <RowBars values={population.values} sampled={idx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={sample.estimate} />
               <div className="legend">
                 <span><span className="sw sq" style={{ background: "var(--pop)" }} />not sampled</span>
+                <span><span className="key dash" /> true mean (all people)</span>
+                <span><span className="key" /> this sample's mean</span>
                 {groupOf ? names.map((g) => <span key={g}><span className="sw sq" style={{ background: colors[g] }} />sampled · {g}</span>) : <span><span className="sw sq" style={{ background: ACCENT }} />sampled</span>}
               </div>
             </div>
@@ -349,7 +352,7 @@ const domainFor = (results) => {
   return [Math.max(0, lo - pad), hi + pad];
 };
 
-function ExperimentTab({ title, intro, conditions, rowLabel }) {
+function ExperimentTab({ title, intro, conditions, rowLabel, expName }) {
   const [seed, setSeed] = useState(2026);
   const [reps, setReps] = useState(100);
   const [strataCol, setStrataCol] = useState("smoker");
@@ -366,6 +369,18 @@ function ExperimentTab({ title, intro, conditions, rowLabel }) {
     }, 10);
   };
   const shared = out ? domainFor(out.results) : null;
+  const [copied, setCopied] = useState(false);
+  const rowsOf = () => out.results.map((r) => [expName, "baseline", METHODS[r.method], r.settings.replace(/,/g, ";"), r.type === "exact" ? "exact" : r.seed, r.n, r.count, r.type, r.trueMean.toFixed(2), r.bias.toFixed(2), r.sd.toFixed(2), r.rmse.toFixed(2)]);
+  const HEAD = ["Experiment", "Population or condition", "Method", "Settings", "Seed (or exact)", "n", "Repetitions or starts", "Type", "True mean", "Bias", "SD", "RMSE"];
+  const downloadCsv = () => {
+    const csv = [HEAD, ...rowsOf()].map((r) => r.join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `${expName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.csv`; a.click();
+  };
+  const copyRows = async () => {
+    const md = rowsOf().map((r) => "| " + r.join(" | ") + " |").join("\n");
+    try { await navigator.clipboard.writeText(md); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
+  };
 
   return (
     <>
@@ -426,6 +441,10 @@ function ExperimentTab({ title, intro, conditions, rowLabel }) {
           <p className="meta">Baseline population · {population.file} · N = {N.toLocaleString()} · seed {out.seed} (exact rows need none) · repetitions {out.reps} for Monte Carlo rows; exact rows list every start (count shown in the row).
             Bias = mean of estimates − true mean; SD = spread of the estimates; RMSE = √(mean of (estimate − true mean)²).</p>
           <p className="note">100 repetitions usually reveal the main pattern; 1,000 give smoother distributions and more stable bias, SD and RMSE. Neither guarantees stable results, and 100 repetitions cannot reliably separate small differences between methods: rerun with different seeds to check. Systematic sampling with a whole-number interval uses exact enumeration, so it ignores the seed and repetitions.</p>
+          <div className="actions">
+            <button className="btn ghost" onClick={downloadCsv}>Download results (CSV)</button>
+            <button className="btn ghost" onClick={copyRows}>{copied ? "Copied" : "Copy rows for the DECISIONS.md table"}</button>
+          </div>
           <details><summary>View results as a table</summary>
             <table>
               <thead><tr><th>Condition</th><th>Type</th><th className="num">n</th><th className="num">Reps / starts</th><th>Seed</th><th className="num">True mean</th><th className="num">Bias</th><th className="num">SD</th><th className="num">RMSE</th></tr></thead>
@@ -445,15 +464,44 @@ function StripAxis({ domain }) {
   const ticks = []; for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
   const k = (v) => (v === 0 ? "$0" : v >= 1000 ? "$" + +(v / 1000).toFixed(1) + "K" : "$" + v);
   return (
-    <svg viewBox={`0 0 ${W} 22`} style={{ display: "block", width: "100%" }} aria-hidden="true">
+    <svg viewBox={`0 0 ${W} 24`} style={{ display: "block", width: "100%" }} aria-hidden="true">
       <line x1={L} x2={W - R} y1="2" y2="2" strokeWidth="1" style={{ stroke: "var(--axis)" }} />
-      {ticks.map((t) => <text key={t} x={x(t)} y="17" fontSize="11" textAnchor="middle" style={{ fill: "var(--muted)" }}>{k(t)}</text>)}
+      {ticks.map((t) => <text key={t} x={x(t)} y="17" fontSize="15" textAnchor="middle" style={{ fill: "var(--muted)" }}>{k(t)}</text>)}
     </svg>
   );
 }
 
+function GlossaryTab() {
+  const terms = [
+    ["Unit (one row)", "The thing each row describes. Here: one person, a beneficiary record."],
+    ["Target variable", "The column you want to estimate the average of. Here: charges, in US dollars."],
+    ["Finite population", "Every row in the file, nothing more. Here: the 1,338 people in healthcare_costs.csv."],
+    ["True (population) mean", "The average of the target over every row. Because you hold the whole file, it is known exactly."],
+    ["Row order", "The order of rows in the file. In this file it is the source file's order and has no documented meaning; it is not a time sequence."],
+    ["Stratum (strata)", "A group of rows defined by an observable column, such as smoker or region. Stratified sampling samples inside each group."],
+    ["Simple random sampling", "n different rows chosen at random without replacement; every set of n rows is equally likely. Estimate = sample mean."],
+    ["Systematic sampling", "Every k-th row in file order from a random start (k = N ÷ n). With a whole-number k there are exactly k equally likely starts; otherwise a fractional interval is used."],
+    ["Proportional allocation", "Each stratum gets a share of n in proportion to its size (largest-remainder rounding, at least 1 each, total exactly n)."],
+    ["Population-weighted estimate", "Σ (stratum size ÷ N) × (sample mean in that stratum). Not the plain average of all sampled rows."],
+    ["Estimate", "The number a sample produces for the true mean."],
+    ["Bias", "Mean of the estimates − the true mean."],
+    ["SD of estimates", "The spread of the estimates across repetitions."],
+    ["RMSE", "√(mean of (estimate − true mean)²): typical estimation error, combining bias and variability. RMSE² = bias² + SD²."],
+    ["Repetitions", "How many separate samples are drawn. Separate from n, the number of rows in one sample."],
+    ["Exact enumeration", "Listing every possible start (whole-number systematic sampling) instead of drawing random samples. Labelled “exact”."],
+    ["Monte Carlo", "Repeated random sampling with a seeded random number generator. Labelled “Monte Carlo”."],
+    ["Seed", "The starting value of the random number generator. The same seed and settings always reproduce the same samples and results."],
+  ];
+  return (
+    <section className="block">
+      <h2>Glossary</h2>
+      <dl className="gloss">{terms.map(([t, d]) => <React.Fragment key={t}><dt>{t}</dt><dd>{d}</dd></React.Fragment>)}</dl>
+    </section>
+  );
+}
+
 // ------------------------------------------------------------------ Shell
-const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"]];
+const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["gloss", "Glossary"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "pop");
@@ -472,9 +520,10 @@ export default function App() {
       </nav>
       <main>
         {tab === "pop" && <PopulationTab />}
+        {tab === "gloss" && <GlossaryTab />}
         {tab === "explore" && <ExploreTab />}
-        {tab === "methods" && <ExperimentTab key="m" rowLabel="Method" title="Experiment A: three methods at n = 100" intro="Simple random, systematic and stratified sampling on the baseline population, each with the same total n = 100 and the same seed." conditions={[{ method: "srs", n: 100 }, { method: "systematic", n: 100 }, { method: "stratified", n: 100 }]} />}
-        {tab === "size" && <ExperimentTab key="s" rowLabel="Sample size" title="Experiment B: simple random sampling at n = 1, 10 and 100" intro="Same population and method; only the sample size changes. With the same seed and repetitions, the n = 100 result matches the simple random result in Experiment A." conditions={[{ method: "srs", n: 1 }, { method: "srs", n: 10 }, { method: "srs", n: 100 }]} />}
+        {tab === "methods" && <ExperimentTab key="m" rowLabel="Method" expName="Methods at n = 100" title="Experiment A: three methods at n = 100" intro="Simple random, systematic and stratified sampling on the baseline population, each with the same total n = 100 and the same seed." conditions={[{ method: "srs", n: 100 }, { method: "systematic", n: 100 }, { method: "stratified", n: 100 }]} />}
+        {tab === "size" && <ExperimentTab key="s" rowLabel="Sample size" expName="Sample size" title="Experiment B: simple random sampling at n = 1, 10 and 100" intro="Same population and method; only the sample size changes. With the same seed and repetitions, the n = 100 result matches the simple random result in Experiment A." conditions={[{ method: "srs", n: 1 }, { method: "srs", n: 10 }, { method: "srs", n: 100 }]} />}
       </main>
       <footer>
         Baseline population: <code>{population.file}</code> ({N.toLocaleString()} people). A teaching dataset, not real patient records or a representative sample of current claims.

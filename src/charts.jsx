@@ -34,43 +34,59 @@ function RefLabels({ x, tx, ex, top }) {
 function RefLines({ x, tx, ex, y0, y1 }) {
   return (
     <g>
-      <line x1={x(tx)} x2={x(tx)} y1={y0} y2={y1} strokeWidth="1.5" strokeDasharray="5 4" style={stroke("var(--ink2)")} />
-      {ex != null && <line x1={x(ex)} x2={x(ex)} y1={y0} y2={y1} strokeWidth="2" style={stroke("var(--ink)")} />}
+      <line x1={x(tx)} x2={x(tx)} y1={y0} y2={y1} strokeWidth="2" strokeDasharray="6 4" style={stroke("var(--truec)")} />
+      {ex != null && <line x1={x(ex)} x2={x(ex)} y1={y0} y2={y1} strokeWidth="2.4" style={stroke("var(--samplec)")} />}
     </g>
   );
 }
 
-// ---- 1. Every person as a bar, in file order (the "peaks" view). Sampled people are coloured.
+// ---- 1. Every person as a bar, in file order. Sampled people are thick, dotted and coloured.
 export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est }) {
-  const N = values.length, W = 900, H = 300, L = 50, R = 12, T = 30, B = 34;
+  const N = values.length, W = 980, H = 340, L = 52, R = 150, T = 18, B = 36;
   const top = Math.ceil(Math.max(...values) / 10000) * 10000;
   const bw = (W - L - R) / N;
   const Y = (v) => T + (H - T - B) * (1 - v / top);
   const sel = new Set(sampled);
   const ticks = niceTicks(0, top, 4);
-  const halo = { stroke: "var(--surface)", strokeWidth: 4, paintOrder: "stroke" };
+  // right-margin labels, kept at least 40px apart
+  const items = [{ k: "true", y: Y(trueMean), name: "True mean", val: trueMean, c: "var(--truec)", dash: true }];
+  if (est != null) items.push({ k: "est", y: Y(est), name: "Sample estimate", val: est, c: "var(--samplec)" });
+  items.sort((a, b) => a.y - b.y);
+  const ly = items.map((it) => it.y);
+  for (let i = 1; i < ly.length; i++) if (ly[i] - ly[i - 1] < 40) ly[i] = ly[i - 1] + 40;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="One bar per person in file order; bar height is charges; sampled people are coloured">
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="One bar per person in file order; bar height is charges; sampled people are thick coloured bars with a dot on top">
       {ticks.map((t) => (
         <g key={t}>
           <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} strokeWidth="1" style={stroke("var(--grid)")} />
           <text x={L - 8} y={Y(t) + 4} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{moneyK(t)}</text>
         </g>
       ))}
-      {values.map((v, i) => !sel.has(i) && <rect key={i} x={L + i * bw} y={Y(v)} width={Math.max(bw, 0.7)} height={H - B - Y(v)} style={fill("var(--pop)")} shapeRendering="crispEdges" />)}
-      {sampled.map((i) => (
-        <rect key={"s" + i} x={L + i * bw - 0.5} y={Y(values[i])} width={Math.max(bw, 0.7) + 1.4} height={H - B - Y(values[i])} rx="1" style={fill(colorOf(i))}>
-          <title>{`Row ${i + 1}: ${money0(values[i])}${groupOf ? " · " + groupOf[i] : ""}`}</title>
-        </rect>
-      ))}
-      <line x1={L} x2={W - R} y1={Y(trueMean)} y2={Y(trueMean)} strokeWidth="2" strokeDasharray="6 4" style={stroke("var(--ink2)")} />
-      {est != null && <line x1={L} x2={W - R} y1={Y(est)} y2={Y(est)} strokeWidth="2.2" style={stroke("var(--ink)")} />}
-      <text x={W - R} y={Y(trueMean) - 8} fontSize="12" fontWeight="700" textAnchor="end" style={{ ...fill("var(--ink2)"), ...halo }}>True mean {money0(trueMean)}</text>
-      {est != null && <text x={L + 6} y={Y(est) - 8} fontSize="12" fontWeight="700" style={{ ...fill("var(--ink)"), ...halo }}>Sample {money0(est)}</text>}
+      {values.map((v, i) => !sel.has(i) && <rect key={i} x={L + i * bw + bw * 0.1} y={Y(v)} width={Math.max(bw * 0.8, 0.6)} height={H - B - Y(v)} style={fill("var(--pop)")} opacity="0.75" shapeRendering="crispEdges" />)}
+      {sampled.map((i) => {
+        const cx = L + (i + 0.5) * bw;
+        return (
+          <g key={"s" + i}>
+            <rect x={cx - 1.4} y={Y(values[i])} width="2.8" height={H - B - Y(values[i])} rx="1" style={fill(colorOf(i))} />
+            <circle cx={cx} cy={Y(values[i])} r="3.6" strokeWidth="1.6" style={{ ...fill(colorOf(i)), ...stroke("var(--surface)") }}>
+              <title>{`Row ${i + 1}: ${money0(values[i])}${groupOf ? " · " + groupOf[i] : ""}`}</title>
+            </circle>
+          </g>
+        );
+      })}
       <line x1={L} x2={W - R} y1={H - B} y2={H - B} strokeWidth="1" style={stroke("var(--axis)")} />
-      <text x={L} y={H - 12} fontSize="11" style={fill("var(--muted)")}>row 1</text>
-      <text x={(L + W - R) / 2} y={H - 12} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>file order →</text>
-      <text x={W - R} y={H - 12} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {N.toLocaleString()}</text>
+      {items.map((it, j) => (
+        <g key={it.k}>
+          <line x1={L} x2={W - R + 6} y1={it.y} y2={it.y} strokeWidth={it.dash ? 2 : 2.4} strokeDasharray={it.dash ? "6 4" : undefined} style={stroke(it.c)} />
+          <path d={`M${W - R + 6} ${it.y} L${W - R + 22} ${ly[j] + 2}`} strokeWidth="1" fill="none" style={stroke("var(--axis)")} />
+          <line x1={W - R + 24} x2={W - R + 24} y1={ly[j] - 12} y2={ly[j] + 14} strokeWidth="3" style={stroke(it.c)} strokeDasharray={it.dash ? "5 3" : undefined} />
+          <text x={W - R + 32} y={ly[j] - 1} fontSize="11.5" style={fill("var(--ink2)")}>{it.name}</text>
+          <text x={W - R + 32} y={ly[j] + 14} fontSize="14" fontWeight="700" style={fill("var(--ink)")}>{money0(it.val)}</text>
+        </g>
+      ))}
+      <text x={L} y={H - 14} fontSize="11" style={fill("var(--muted)")}>row 1</text>
+      <text x={(L + W - R) / 2} y={H - 14} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>each bar = one person, in file order →</text>
+      <text x={W - R} y={H - 14} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {N.toLocaleString()}</text>
     </svg>
   );
 }
@@ -178,7 +194,7 @@ export function StripRow({ estimates, domain, trueMean, meanOfEstimates, axis, l
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
       <line x1={L} x2={W - R} y1={lane / 2} y2={lane / 2} strokeWidth="1" style={stroke("var(--grid)")} />
-      <line x1={x(trueMean)} x2={x(trueMean)} y1={2} y2={lane - 2} strokeWidth="1.5" strokeDasharray="4 3" style={stroke("var(--ink2)")} />
+      <line x1={x(trueMean)} x2={x(trueMean)} y1={2} y2={lane - 2} strokeWidth="2" strokeDasharray="4 3" style={stroke("var(--truec)")} />
       {estimates.map((e, i) => (
         <circle key={i} cx={x(Math.min(hi, Math.max(lo, e)))} cy={10 + jit(i) * (lane - 20)} r="3.2" style={{ ...fill(ACCENT), opacity: 0.38 }}>
           <title>{`Estimate: ${money0(e)}`}</title>
@@ -191,7 +207,7 @@ export function StripRow({ estimates, domain, trueMean, meanOfEstimates, axis, l
         <g>
           <line x1={L} x2={W - R} y1={lane + 2} y2={lane + 2} strokeWidth="1" style={stroke("var(--axis)")} />
           {niceTicks(lo, hi, 5).map((t) => (
-            <text key={t} x={x(t)} y={lane + 17} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>
+            <text key={t} x={x(t)} y={lane + 19} fontSize="15" textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>
           ))}
         </g>
       )}
@@ -215,7 +231,7 @@ export function SimpleHistogram({ values, trueMean, top }) {
         </rect>
       ))}
       <line x1={L} x2={W - R} y1={H - B} y2={H - B} strokeWidth="1" style={stroke("var(--axis)")} />
-      <line x1={x(trueMean)} x2={x(trueMean)} y1={T - 4} y2={H - B} strokeWidth="1.5" strokeDasharray="5 4" style={stroke("var(--ink2)")} />
+      <line x1={x(trueMean)} x2={x(trueMean)} y1={T - 4} y2={H - B} strokeWidth="2" strokeDasharray="6 4" style={stroke("var(--truec)")} />
       <text x={x(trueMean) + 8} y={T - 10} fontSize="12" fontWeight="600" style={fill("var(--ink2)")}>True mean {money0(trueMean)}</text>
       {niceTicks(0, top, 7).map((t) => <text key={t} x={x(t)} y={H - 8} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>)}
     </svg>
