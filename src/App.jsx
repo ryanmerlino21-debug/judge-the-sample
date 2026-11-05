@@ -1,32 +1,24 @@
 import React, { useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
-import { Histogram, RowStrip, money, money0, PALETTE } from "./charts.jsx";
+import { DistributionPair, OrderDots, ShareBars, SimpleHistogram, StripRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
 const TRUE_MEAN = S.trueMean(population.values);
-const POP_MIN = Math.min(...population.values);
-const POP_MAX = Math.max(...population.values);
+const TOP = Math.ceil(Math.max(...population.values) / 10000) * 10000;
 const METHODS = { srs: "Simple random", systematic: "Systematic", stratified: "Stratified" };
 
 const groupCounts = Object.fromEntries(
   GROUP_COLUMNS.map((c) => [c, S.strataOf(population.groups[c]).map((s) => [s.name, s.size]).sort((a, b) => String(a[0]).localeCompare(String(b[0]), undefined, { numeric: true }))])
 );
 
-const TrueMeanBadge = ({ big }) => (
-  <div className="truemean">
-    <div className="small muted">True mean of {TARGET} (all {N.toLocaleString()} rows)</div>
-    <div className="v">{money(TRUE_MEAN)}</div>
-  </div>
-);
-
-// ---------------------------------------------------------------- Population
+// ------------------------------------------------------------ Population
 function PopulationTab() {
   return (
     <>
-      <div className="card">
+      <section className="block">
         <h2>Healthcare costs <span className="tag gold">Public teaching data, simulated by its author</span></h2>
-        <p>A health-plan analyst wants to estimate average medical charges per person in this list without reviewing every record.</p>
+        <p className="sub">A health-plan analyst wants to estimate average medical charges per person in this list without reviewing every record.</p>
         <dl className="facts">
           <dt>One row</dt><dd>one person (a beneficiary record)</dd>
           <dt>Rows (N)</dt><dd>{N.toLocaleString()}</dd>
@@ -34,15 +26,17 @@ function PopulationTab() {
           <dt>Population</dt><dd>The 1,338 people in this file. It is a teaching dataset, not a representative sample of current claims.</dd>
           <dt>Row order</dt><dd>The order of the source file. <code>row_id</code> is added; the order has no documented meaning and is not a time sequence.</dd>
           <dt>Group columns</dt>
-          <dd>
-            {GROUP_COLUMNS.map((c) => (
-              <div key={c}><code>{c}</code>: {groupCounts[c].map(([g, k]) => `${g} ${k.toLocaleString()}`).join(", ")}</div>
-            ))}
-          </dd>
+          <dd>{GROUP_COLUMNS.map((c) => <div key={c}><code>{c}</code>: {groupCounts[c].map(([g, k]) => `${g} ${k.toLocaleString()}`).join(", ")}</div>)}</dd>
         </dl>
-      </div>
+      </section>
 
-      <div className="card">
+      <section className="block">
+        <h2>What the charges look like</h2>
+        <p className="sub">Each bar counts people whose charges fall in that $2,500 band. The dashed line is the true mean of the whole file.</p>
+        <div className="chart"><SimpleHistogram values={population.values} trueMean={TRUE_MEAN} top={TOP} /></div>
+      </section>
+
+      <section className="block">
         <h2>Columns in <code>healthcare_costs.csv</code></h2>
         <table>
           <thead><tr><th>Column</th><th>Meaning</th><th>Units / values</th></tr></thead>
@@ -60,12 +54,12 @@ function PopulationTab() {
         </table>
         <details>
           <summary>Provenance, licence and fingerprint</summary>
-          <p style={{ marginTop: 8 }}>The <code>insurance.csv</code> teaching dataset distributed with Brett Lantz's book <em>Machine Learning with R</em> (Packt), as mirrored in the stedy/Machine-Learning-with-R-datasets GitHub repository. The book describes it as hypothetical (simulated) data created using US Census Bureau demographic statistics; the repository itself documents nothing further, and how charges were generated is not published. Unchanged except for the added <code>row_id</code> and <code>age_band</code> columns.</p>
+          <p style={{ marginTop: 10 }}>The <code>insurance.csv</code> teaching dataset distributed with Brett Lantz's book <em>Machine Learning with R</em> (Packt), as mirrored in the stedy/Machine-Learning-with-R-datasets GitHub repository. The book describes it as hypothetical (simulated) data created using US Census Bureau demographic statistics; the repository itself documents nothing further, and how charges were generated is not published. Unchanged except for the added <code>row_id</code> and <code>age_band</code> columns.</p>
           <p><b>Source:</b> <a href="https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv" target="_blank" rel="noreferrer">stedy/Machine-Learning-with-R-datasets, insurance.csv</a></p>
           <p><b>Licence / reuse:</b> No licence is stated in the source repository. Widely redistributed for teaching; confirm this use fits your course policy.</p>
           <p className="small"><b>SHA-256:</b> <code>d51bc2b911e7d636d232ee6e9fb94b0c0e9bbad2d898894d9938afb7fa2bbbbd</code></p>
         </details>
-      </div>
+      </section>
 
       <div className="callout">
         <b>Claims to avoid</b>
@@ -75,24 +69,24 @@ function PopulationTab() {
         </ul>
       </div>
 
-      <div className="card">
+      <section className="block">
         <h3>Try it yourself</h3>
-        <p className="small" style={{ margin: 0 }}>Without looking at the card, explain in two sentences what one row is and what the true mean of <code>charges</code> describes. Then name one group of people your population does <em>not</em> describe.</p>
-      </div>
+        <p className="sub">Without looking at the card, explain in two sentences what one row is and what the true mean of <code>charges</code> describes. Then name one group of people your population does <em>not</em> describe.</p>
+      </section>
 
-      <div className="card small muted">
+      <p className="note">
         Source: <code>insurance.csv</code> from Brett Lantz, <em>Machine Learning with R</em> (Packt), via{" "}
         <a href="https://github.com/stedy/Machine-Learning-with-R-datasets" target="_blank" rel="noreferrer">stedy/Machine-Learning-with-R-datasets</a>.
         Described by its author as simulated from US Census demographic statistics. No licence is stated in the source repository; confirm reuse fits your course policy.
-      </div>
+      </p>
     </>
   );
 }
 
-// ------------------------------------------------------------------- Explore
+// --------------------------------------------------------------- Explore
 function SeedField({ seed, setSeed }) {
   return (
-    <label className="f">Seed
+    <label>Seed
       <div className="seedrow">
         <input type="number" value={seed} onChange={(e) => setSeed(Math.max(0, Math.floor(Number(e.target.value) || 0)))} />
         <button className="btn ghost" type="button" onClick={() => setSeed(Math.floor(Math.random() * 1e6))}>New</button>
@@ -112,7 +106,7 @@ function ExploreTab() {
   const [n, setN] = useState(100);
   const [seed, setSeed] = useState(2026);
   const [strataCol, setStrataCol] = useState("smoker");
-  const [colorBy, setColorBy] = useState("smoker");
+  const [colorBy, setColorBy] = useState("none");
 
   const nn = Math.min(N, Math.max(1, Math.floor(n) || 1));
   const { sample, error } = useMemo(() => {
@@ -120,259 +114,262 @@ function ExploreTab() {
     catch (e) { return { error: e.message }; }
   }, [method, nn, seed, strataCol]);
 
-  const colors = useMemo(() => {
-    const names = groupCounts[colorBy].map(([g]) => g);
-    return Object.fromEntries(names.map((g, i) => [g, PALETTE[i % PALETTE.length]]));
-  }, [colorBy]);
+  const names = colorBy === "none" ? [] : groupCounts[colorBy].map(([g]) => g);
+  const colors = Object.fromEntries(names.map((g, i) => [g, SLOTS[i % SLOTS.length]]));
   const groupOf = colorBy === "none" ? null : population.groups[colorBy];
-
+  const colorOf = (i) => (groupOf ? colors[groupOf[i]] : ACCENT);
   const design = method === "systematic" ? S.systematicDesign(N, nn) : null;
-  const sampleSet = sample ? sample.indices : [];
-  const diff = sample ? sample.estimate - TRUE_MEAN : 0;
+  const idx = sample ? sample.indices : [];
+
+  const shareRows = groupOf && sample ? groupCounts[colorBy].map(([g, k]) => ({
+    name: g, popPct: (100 * k) / N, samPct: (100 * idx.filter((i) => groupOf[i] === g).length) / idx.length, color: colors[g],
+  })) : [];
 
   return (
-    <div className="grid2">
-      <div className="card">
-        <h2>Settings</h2>
-        <label className="f">Method
+    <>
+      <div className="toolbar">
+        <label>Method
           <select value={method} onChange={(e) => setMethod(e.target.value)}>
             {Object.entries(METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </label>
-        <label className="f">Sample size n (1 to {N.toLocaleString()})
+        <label>Sample size n (1–{N.toLocaleString()})
           <input type="number" min="1" max={N} value={n} onChange={(e) => setN(e.target.value === "" ? "" : Number(e.target.value))} />
         </label>
         <SeedField seed={seed} setSeed={setSeed} />
         {method === "stratified" && (
-          <label className="f">Stratify on
-            <select value={strataCol} onChange={(e) => setStrataCol(e.target.value)}>
-              {GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}
-            </select>
+          <label>Stratify on
+            <select value={strataCol} onChange={(e) => setStrataCol(e.target.value)}>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select>
           </label>
         )}
-        <label className="f">Colour the people by
+        <label>Colour people by
           <select value={colorBy} onChange={(e) => setColorBy(e.target.value)}>
             <option value="none">nothing</option>
             {GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}
           </select>
         </label>
-        <p className="small muted">The same seed and settings always reproduce the same sample.</p>
       </div>
 
-      <div>
-        {error ? (
-          <div className="err"><b>Can't draw this sample.</b> {error}. Choose a larger n, or a different stratification column.</div>
-        ) : (
-          <>
-            <div className="card">
-              <span className="tag warm">Single sample</span><span className="tag">Baseline population</span>
-              <div className="stats">
-                <div className="stat"><div className="l">True population mean</div><div className="v truec">{money(TRUE_MEAN)}</div></div>
-                <div className="stat"><div className="l">This sample's estimate</div><div className="v samplec">{money(sample.estimate)}</div></div>
-                <div className="stat"><div className="l">Estimate − true mean</div><div className="v">{(diff >= 0 ? "+" : "") + money(diff)}</div></div>
-                <div className="stat"><div className="l">Rows sampled</div><div className="v">{sampleSet.length}</div></div>
-              </div>
-              <RowStrip values={population.values} sampled={sampleSet} groupOf={groupOf} groupColors={colors} trueMean={TRUE_MEAN} sampleMean={sample.estimate} />
-              <div className="legend">
-                <span><i style={{ background: "#1f6f70" }} />true mean</span>
-                <span><i style={{ background: "#c8553d" }} />sample estimate</span>
-                <span><span className="sw" style={{ background: "#c8553d" }} />sampled rows</span>
-                {groupOf && groupCounts[colorBy].map(([g]) => <span key={g}><span className="sw" style={{ background: colors[g] }} />{g}</span>)}
-              </div>
-              <p className="small muted" style={{ marginTop: 8 }}>
-                Each bar is one person, in file order; bar height is <code>{TARGET}</code>.
-                {method === "systematic" && " The file order has no documented meaning here (it is not a time sequence), so stepping through it means something different from sampling a chronological record."}
-              </p>
-            </div>
-
-            <div className="grid3">
-              <div className="card">
-                <h3>All charges, with the sample</h3>
-                <Histogram values={population.values} domain={[0, Math.ceil(POP_MAX / 10000) * 10000]} color="#cfdcdd"
-                  lines={[{ x: TRUE_MEAN, color: "#1f6f70", dash: true }, { x: sample.estimate, color: "#c8553d" }]} label="Histogram of all charges" />
-                <Histogram values={sampleSet.map((i) => population.values[i])} domain={[0, Math.ceil(POP_MAX / 10000) * 10000]} color="#e8a495" height={110}
-                  lines={[{ x: sample.estimate, color: "#c8553d" }]} label="Histogram of sampled charges" />
-                <p className="small muted">Top: everyone. Bottom: the sampled rows only.</p>
-              </div>
-              {groupOf && (
-                <div className="card">
-                  <h3>Who got sampled? <code>{colorBy}</code></h3>
-                  <table>
-                    <thead><tr><th>Group</th><th className="num">Population</th><th className="num">Sample</th></tr></thead>
-                    <tbody>
-                      {groupCounts[colorBy].map(([g, k]) => {
-                        const c = sampleSet.filter((i) => groupOf[i] === g).length;
-                        return (
-                          <tr key={g}>
-                            <td><span className="sw" style={{ background: colors[g] }} />{g}</td>
-                            <td className="num">{((100 * k) / N).toFixed(1)}%</td>
-                            <td className="num">{sampleSet.length ? ((100 * c) / sampleSet.length).toFixed(1) : 0}% <span className="muted">({c})</span></td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  <p className="small muted">Compare each group's share of the sample with its share of the population.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="card">
-              <h3>How this sample was chosen</h3>
-              <p>{RULES[method]}</p>
-              {design && (
-                <p className="small"><b>Design that applies:</b> {design.kind}. N ÷ n = {N} ÷ {nn} = {design.k.toFixed(3).replace(/\.?0+$/, "")}.{" "}
-                  {design.whole ? <>Random start r in 1..{design.k}: rows r, r+{design.k}, r+{2 * design.k}, … (start used: {sample.start}).</> : <>Start u uniform in (0, k]; rows ⌈u + j·k⌉ for j = 0..{nn - 1} (start used: {sample.start.toFixed(3)}).</>}</p>
-              )}
-              {method === "stratified" && (
-                <>
-                  <p className="small">Proportional allocation (largest-remainder rounding, at least 1 per group, never above the group size, total = n). Within each group: simple random sample without replacement.</p>
-                  <table>
-                    <thead><tr><th>{strataCol}</th><th className="num">Group size</th><th className="num">Weight</th><th className="num">Allocated</th></tr></thead>
-                    <tbody>
-                      {sample.strata.map((s, h) => (
-                        <tr key={s.name}><td>{s.name}</td><td className="num">{s.size.toLocaleString()}</td><td className="num">{(s.size / N).toFixed(4)}</td><td className="num">{sample.alloc[h]}</td></tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
-              <p className="small muted" style={{ marginTop: 8 }}>
-                Population: baseline · {population.file} · N = {N.toLocaleString()} · method: {METHODS[method]}
-                {method === "stratified" && ` (on ${strataCol})`} · n = {nn} · seed {seed}
-              </p>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// --------------------------------------------------------------- Experiments
-function ResultCard({ r, domain, strataCol }) {
-  return (
-    <div className="card">
-      <h2>{METHODS[r.method]} <span className="tag">{r.type}</span></h2>
-      <div className="stats">
-        <div className="stat"><div className="l">Bias</div><div className="v">{(r.bias >= 0 ? "+" : "") + money(r.bias)}</div></div>
-        <div className="stat"><div className="l">SD</div><div className="v">{money(r.sd)}</div></div>
-        <div className="stat"><div className="l">RMSE</div><div className="v">{money(r.rmse)}</div></div>
-      </div>
-      <Histogram values={r.estimates} domain={domain} bins={30} color="#9db9ba" height={150}
-        lines={[{ x: r.trueMean, color: "#1f6f70", dash: true }, { x: r.meanOfEstimates, color: "#c8553d" }]} label={`Distribution of ${r.count} estimates`} />
-      <div className="legend">
-        <span><i style={{ background: "#1f6f70" }} />true mean {money(r.trueMean)}</span>
-        <span><i style={{ background: "#c8553d" }} />mean of estimates</span>
-      </div>
-      <p className="meta" style={{ marginTop: 8 }}>
-        <b>Population:</b> baseline ({N.toLocaleString()} rows) · <b>n</b> {r.n} · <b>{r.type === "exact" ? "Starts (all enumerated)" : "Repetitions"}:</b> {r.count}<br />
-        <b>Seed:</b> {r.type === "exact" ? "none needed (exact)" : r.seed} · <b>Settings:</b> {r.settings}
-      </p>
-    </div>
-  );
-}
-
-function domainFor(results) {
-  let lo = Infinity, hi = -Infinity;
-  for (const r of results) {
-    for (const e of r.estimates) { lo = Math.min(lo, e); hi = Math.max(hi, e); }
-    lo = Math.min(lo, r.trueMean); hi = Math.max(hi, r.trueMean);
-  }
-  const pad = (hi - lo) * 0.08 || 100;
-  return [Math.max(0, lo - pad), hi + pad];
-}
-
-function ExperimentTab({ title, intro, conditions }) {
-  const [seed, setSeed] = useState(2026);
-  const [reps, setReps] = useState(100);
-  const [strataCol, setStrataCol] = useState("smoker");
-  const [results, setResults] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const needsStrata = conditions.some((c) => c.method === "stratified");
-
-  const run = () => {
-    setBusy(true);
-    setTimeout(() => {
-      setResults(conditions.map((c) => ({ ...S.repeatedResult({ ...c, pop: population, reps, seed, strataCol }) })));
-      setBusy(false);
-    }, 10);
-  };
-
-  return (
-    <>
-      <div className="card">
-        <h2>{title}</h2>
-        <p>{intro}</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14, alignItems: "end" }}>
-          <SeedField seed={seed} setSeed={setSeed} />
-          <label className="f">Repetitions (separate samples)
-            <select value={reps} onChange={(e) => setReps(Number(e.target.value))}>
-              {[100, 250, 500, 1000].map((x) => <option key={x}>{x}</option>)}
-            </select>
-          </label>
-          {needsStrata && (
-            <label className="f">Stratify on
-              <select value={strataCol} onChange={(e) => setStrataCol(e.target.value)}>
-                {GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </label>
-          )}
-          <div style={{ marginBottom: 12 }}><button className="btn" onClick={run} disabled={busy}>{busy ? "Running…" : results ? "Run again (replaces results)" : "Run"}</button></div>
-        </div>
-        <p className="small muted">
-          100 repetitions usually reveal the main pattern; 1,000 give smoother distributions and more stable bias, SD and RMSE. Neither guarantees stable results, and 100 repetitions cannot reliably separate small differences between methods: rerun with different seeds to check. Sample size and repetitions are separate settings: n is the rows in one sample; repetitions is how many samples are drawn. Systematic sampling with a whole-number interval uses exact enumeration (all starts), so it ignores the seed and repetitions.
-        </p>
-      </div>
-      {results && (
+      {error ? (
+        <div className="err"><b>Can't draw this sample.</b> {error}. Choose a larger n, or a different stratification column.</div>
+      ) : (
         <>
-          <div className="grid3">
-            {results.map((r, i) => <ResultCard key={i} r={r} domain={domainFor(results)} />)}
+          <div className="hero">
+            <div>
+              <div className="lab"><span className="key dash" /> True mean · all {N.toLocaleString()} people</div>
+              <div className="big" style={{ color: "var(--ink2)" }}>{money(TRUE_MEAN)}</div>
+            </div>
+            <div>
+              <div className="lab"><span className="key" /> This sample's estimate · single sample</div>
+              <div className="big">{money(sample.estimate)}</div>
+            </div>
+            <div>
+              <div className="lab">Estimate − true mean</div>
+              <div className="mid">{signed(sample.estimate - TRUE_MEAN)}</div>
+            </div>
           </div>
-          <p className="small muted">Each result is one condition on its own. Bias = mean of estimates − true mean; SD = spread of the estimates across repetitions; RMSE = √(mean of (estimate − true mean)²). All in US dollars.</p>
+
+          <section className="block">
+            <h2>Who is in the sample?</h2>
+            <p className="sub">Every person in the file is a dot; height is <code>{TARGET}</code>. The {idx.length} sampled people are the large coloured dots.
+              {method === "systematic" && " The file order has no documented meaning (it is not a time sequence), so stepping through it means something different from sampling a chronological record."}</p>
+            <div className="chart">
+              <OrderDots values={population.values} sampled={idx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={sample.estimate} />
+              <div className="legend">
+                <span><span className="sw" style={{ background: "var(--pop)" }} />everyone in the file</span>
+                {groupOf ? names.map((g) => <span key={g}><span className="sw" style={{ background: colors[g] }} />sampled · {g}</span>) : <span><span className="sw" style={{ background: ACCENT }} />sampled</span>}
+              </div>
+            </div>
+          </section>
+
+          <section className="block">
+            <h2>How do the sampled charges compare with everyone's?</h2>
+            <p className="sub">Same horizontal scale in both panels.</p>
+            <div className="chart">
+              <DistributionPair values={population.values} sampled={idx} groupOf={groupOf} groupNames={names} colors={colors} trueMean={TRUE_MEAN} est={sample.estimate} top={TOP} />
+              {groupOf && <div className="legend">{names.map((g) => <span key={g}><span className="sw sq" style={{ background: colors[g] }} />{g}</span>)}</div>}
+            </div>
+          </section>
+
+          {groupOf && (
+            <section className="block">
+              <h2>Does the sample mirror the population? <code>{colorBy}</code></h2>
+              <p className="sub">Share of people in each group: population (grey) versus this sample (colour).</p>
+              <div className="chart">
+                <ShareBars rows={shareRows} />
+                <details>
+                  <summary>View as table</summary>
+                  <table>
+                    <thead><tr><th>{colorBy}</th><th className="num">Population</th><th className="num">Sample share</th><th className="num">Sample count</th></tr></thead>
+                    <tbody>{shareRows.map((r) => <tr key={r.name}><td>{r.name}</td><td className="num">{r.popPct.toFixed(1)}%</td><td className="num">{r.samPct.toFixed(1)}%</td><td className="num">{Math.round((r.samPct * idx.length) / 100)}</td></tr>)}</tbody>
+                  </table>
+                </details>
+              </div>
+            </section>
+          )}
+
+          <section className="block">
+            <h2>How this sample was chosen</h2>
+            <p className="sub">{RULES[method]}</p>
+            {design && (
+              <p className="small"><b>Design that applies:</b> {design.kind}. N ÷ n = {N} ÷ {nn} = {design.k.toFixed(3).replace(/\.?0+$/, "")}.{" "}
+                {design.whole ? <>Random start r in 1..{design.k}: rows r, r+{design.k}, r+{2 * design.k}, … (start used: {sample.start}).</> : <>Start u uniform in (0, k]; rows ⌈u + j·k⌉ for j = 0..{nn - 1} (start used: {sample.start.toFixed(3)}).</>}</p>
+            )}
+            {method === "stratified" && (
+              <>
+                <p className="small">Proportional allocation (largest-remainder rounding, at least 1 per group, never above the group size, total = n). Within each group: simple random sample without replacement.</p>
+                <table>
+                  <thead><tr><th>{strataCol}</th><th className="num">Group size</th><th className="num">Weight</th><th className="num">Allocated</th></tr></thead>
+                  <tbody>{sample.strata.map((s, h) => <tr key={s.name}><td>{s.name}</td><td className="num">{s.size.toLocaleString()}</td><td className="num">{(s.size / N).toFixed(4)}</td><td className="num">{sample.alloc[h]}</td></tr>)}</tbody>
+                </table>
+              </>
+            )}
+            <p className="meta">Baseline population · {population.file} · N = {N.toLocaleString()} · {METHODS[method]}{method === "stratified" && ` on ${strataCol}`} · n = {nn} · seed {seed} (same seed and settings reproduce this sample)</p>
+          </section>
         </>
       )}
     </>
   );
 }
 
+// ------------------------------------------------------------ Experiments
+const domainFor = (results) => {
+  let lo = Infinity, hi = -Infinity;
+  for (const r of results) {
+    for (const e of r.estimates) { lo = Math.min(lo, e); hi = Math.max(hi, e); }
+    lo = Math.min(lo, r.trueMean); hi = Math.max(hi, r.trueMean);
+  }
+  const pad = (hi - lo) * 0.06 || 100;
+  return [Math.max(0, lo - pad), hi + pad];
+};
+
+function ExperimentTab({ title, intro, conditions, rowLabel }) {
+  const [seed, setSeed] = useState(2026);
+  const [reps, setReps] = useState(100);
+  const [strataCol, setStrataCol] = useState("smoker");
+  const [zoom, setZoom] = useState("shared");
+  const [out, setOut] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const needsStrata = conditions.some((c) => c.method === "stratified");
+
+  const run = () => {
+    setBusy(true);
+    setTimeout(() => {
+      setOut({ seed, reps, strataCol, results: conditions.map((c) => S.repeatedResult({ ...c, pop: population, reps, seed, strataCol })) });
+      setBusy(false);
+    }, 10);
+  };
+  const shared = out ? domainFor(out.results) : null;
+
+  return (
+    <>
+      <section className="block" style={{ marginBottom: 20 }}>
+        <h2>{title}</h2>
+        <p className="sub">{intro}</p>
+      </section>
+      <div className="toolbar">
+        <SeedField seed={seed} setSeed={setSeed} />
+        <label>Repetitions (separate samples)
+          <select value={reps} onChange={(e) => setReps(Number(e.target.value))}>{[100, 250, 500, 1000].map((x) => <option key={x}>{x}</option>)}</select>
+        </label>
+        {needsStrata && (
+          <label>Stratify on
+            <select value={strataCol} onChange={(e) => setStrataCol(e.target.value)}>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select>
+          </label>
+        )}
+        <button className="btn" onClick={run} disabled={busy}>{busy ? "Running…" : out ? "Run again (replaces results)" : "Run experiment"}</button>
+      </div>
+      {!out && <p className="note">Press <b>Run experiment</b>. Sample size and repetitions are separate settings: n is the number of rows in one sample; repetitions is how many separate samples are drawn.</p>}
+      {out && (
+        <>
+          <div className="chart">
+            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+              <div className="legend" style={{ marginTop: 0 }}>
+                <span><span className="sw" style={{ background: ACCENT, opacity: 0.5 }} />one dot = one sample's estimate</span>
+                <span><span className="key" style={{ borderTopWidth: 5, width: 3, height: 12, borderTop: 0, background: "var(--ink)", borderRadius: 2 }} /> mean of the estimates</span>
+                <span><span className="key dash" /> true mean {money(TRUE_MEAN)}</span>
+              </div>
+              <label className="small muted">Scale{" "}
+                <select value={zoom} onChange={(e) => setZoom(e.target.value)} style={{ font: "inherit", padding: "3px 6px", borderRadius: 6 }}>
+                  <option value="shared">same for every row</option>
+                  <option value="each">zoom each row</option>
+                </select>
+              </label>
+            </div>
+            <div className="strip-grid">
+              <div className="hd">{rowLabel}</div><div className="hd">Estimates, in US dollars</div>
+              <div className="hd num" style={{ textAlign: "right" }}>Bias</div><div className="hd" style={{ textAlign: "right" }}>SD</div><div className="hd" style={{ textAlign: "right" }}>RMSE</div>
+              {out.results.map((r, i) => (
+                <React.Fragment key={i}>
+                  <div className="cell name">
+                    {rowLabel === "Method" ? METHODS[r.method] : `n = ${r.n}`}
+                    <span className="tag">{r.type}</span>
+                    <small>{rowLabel === "Method" ? `n = ${r.n} · ` : ""}{r.settings}</small>
+                  </div>
+                  <div className="cell"><StripRow estimates={r.estimates} domain={zoom === "each" ? domainFor([r]) : shared} trueMean={r.trueMean} meanOfEstimates={r.meanOfEstimates} axis={zoom === "each"} label={`${METHODS[r.method]} n=${r.n}: ${r.count} estimates`} /></div>
+                  <div className="cell num">{signed(r.bias)}</div>
+                  <div className="cell num">{money(r.sd)}</div>
+                  <div className="cell num">{money(r.rmse)}</div>
+                </React.Fragment>
+              ))}
+            </div>
+            {zoom === "shared" && (
+              <div className="strip-grid"><div /><StripAxis domain={shared} /><div /><div /><div /></div>
+            )}
+          </div>
+          <p className="meta">Baseline population · {population.file} · N = {N.toLocaleString()} · seed {out.seed} (exact rows need none) · repetitions {out.reps} for Monte Carlo rows; exact rows list every start (count shown in the row).
+            Bias = mean of estimates − true mean; SD = spread of the estimates; RMSE = √(mean of (estimate − true mean)²).</p>
+          <p className="note">100 repetitions usually reveal the main pattern; 1,000 give smoother distributions and more stable bias, SD and RMSE. Neither guarantees stable results, and 100 repetitions cannot reliably separate small differences between methods: rerun with different seeds to check. Systematic sampling with a whole-number interval uses exact enumeration, so it ignores the seed and repetitions.</p>
+          <details><summary>View results as a table</summary>
+            <table>
+              <thead><tr><th>Condition</th><th>Type</th><th className="num">n</th><th className="num">Reps / starts</th><th>Seed</th><th className="num">True mean</th><th className="num">Bias</th><th className="num">SD</th><th className="num">RMSE</th></tr></thead>
+              <tbody>{out.results.map((r, i) => <tr key={i}><td>{METHODS[r.method]} (baseline)</td><td>{r.type}</td><td className="num">{r.n}</td><td className="num">{r.count}</td><td>{r.type === "exact" ? "exact" : r.seed}</td><td className="num">{money(r.trueMean)}</td><td className="num">{signed(r.bias)}</td><td className="num">{money(r.sd)}</td><td className="num">{money(r.rmse)}</td></tr>)}</tbody>
+            </table>
+          </details>
+        </>
+      )}
+    </>
+  );
+}
+
+function StripAxis({ domain }) {
+  const [lo, hi] = domain, W = 600, L = 8, R = 8;
+  const x = (v) => L + ((v - lo) / (hi - lo || 1)) * (W - L - R);
+  const step = (() => { const raw = (hi - lo) / 5, p = 10 ** Math.floor(Math.log10(raw)), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; })();
+  const ticks = []; for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
+  const k = (v) => (v === 0 ? "$0" : v >= 1000 ? "$" + +(v / 1000).toFixed(1) + "K" : "$" + v);
+  return (
+    <svg viewBox={`0 0 ${W} 22`} style={{ display: "block", width: "100%" }} aria-hidden="true">
+      <line x1={L} x2={W - R} y1="2" y2="2" strokeWidth="1" style={{ stroke: "var(--axis)" }} />
+      {ticks.map((t) => <text key={t} x={x(t)} y="17" fontSize="11" textAnchor="middle" style={{ fill: "var(--muted)" }}>{k(t)}</text>)}
+    </svg>
+  );
+}
+
 // ------------------------------------------------------------------ Shell
-const TABS = [
-  ["pop", "The population"],
-  ["explore", "Explore a sample"],
-  ["methods", "Compare methods"],
-  ["size", "Sample size"],
-];
+const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "pop");
+  const go = (k) => { setTab(k); history.replaceState(null, "", "#" + k); };
   return (
-    <>
+    <div className="wrap">
       <header className="top">
-        <div className="row">
-          <div>
-            <h1>Judge the Sample</h1>
-            <div className="question">Which sampling method would you trust for this population, at what sample size, and with what limits?</div>
-          </div>
-          <TrueMeanBadge />
-        </div>
+        <h1>Judge the Sample</h1>
+        <div className="question">Which sampling method would you trust for this population, at what sample size, and with what limits?</div>
+        <nav className="tabs">
+          {TABS.map(([k, label]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => go(k)}>{label}</button>)}
+        </nav>
       </header>
-      <nav className="tabs">
-        {TABS.map(([k, label]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{label}</button>)}
-      </nav>
       <main>
         {tab === "pop" && <PopulationTab />}
         {tab === "explore" && <ExploreTab />}
-        {tab === "methods" && (
-          <ExperimentTab key="m" title="Experiment A: three methods at n = 100" intro="Simple random, systematic and stratified sampling on the baseline population, each with the same total n = 100 and the same seed." conditions={[{ method: "srs", n: 100 }, { method: "systematic", n: 100 }, { method: "stratified", n: 100 }]} />
-        )}
-        {tab === "size" && (
-          <ExperimentTab key="s" title="Experiment B: simple random sampling at n = 1, 10 and 100" intro="Same population and method; only the sample size changes. With the same seed and repetitions, the n = 100 result matches the simple random result in Experiment A." conditions={[{ method: "srs", n: 1 }, { method: "srs", n: 10 }, { method: "srs", n: 100 }]} />
-        )}
+        {tab === "methods" && <ExperimentTab key="m" rowLabel="Method" title="Experiment A: three methods at n = 100" intro="Simple random, systematic and stratified sampling on the baseline population, each with the same total n = 100 and the same seed." conditions={[{ method: "srs", n: 100 }, { method: "systematic", n: 100 }, { method: "stratified", n: 100 }]} />}
+        {tab === "size" && <ExperimentTab key="s" rowLabel="Sample size" title="Experiment B: simple random sampling at n = 1, 10 and 100" intro="Same population and method; only the sample size changes. With the same seed and repetitions, the n = 100 result matches the simple random result in Experiment A." conditions={[{ method: "srs", n: 1 }, { method: "srs", n: 10 }, { method: "srs", n: 100 }]} />}
       </main>
       <footer>
         Baseline population: <code>{population.file}</code> ({N.toLocaleString()} people). A teaching dataset, not real patient records or a representative sample of current claims.
       </footer>
-    </>
+    </div>
   );
 }
