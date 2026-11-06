@@ -18,7 +18,7 @@ my agent about it, and do not edit it afterwards; add a dated revision below ins
 - Number of rows (N): 1,338.
 - Row order, and what it means in this file: The rows are in the same order as the source file. The order has no meaning and is not a time sequence.
 - Target column and units: charges, in US dollars.
-- My finite population is (and what it is not):
+- My finite population is (and what it is not): My finite population is the set of 1,338 people in this file. It is not real patient records, because the data was simulated for teaching, and it is not the average for all patients.
 - True mean I calculated (and how): $13,270.42. I added up the charges for all 1,338 rows and divided by 1,338.
 
 ## 2. Design choices
