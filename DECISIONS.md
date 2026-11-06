@@ -58,7 +58,7 @@ rows use the same n; a challenge baseline row may repeat a matching stage 4 resu
 ## 4. Findings (in my own words, using my own numbers)
 
 - (a) Method comparison: On the baseline population, all three methods were very close to the true mean of $13,270.42. The biases were only $16.70 for simple random, $18.63 for systematic, and $22.77 for stratified, so the main difference was variability. Simple random had an SD of $1,171.27, systematic had $947.90, and stratified had $724.44. Stratified was the most precise, about 38% lower than simple random. This makes sense because smokers and non-smokers have very different charges, and grouping by smoker removes that difference from the sample.
-- (b) Sample-size finding: how sample size affects the spread of estimates and the estimation error, and what a larger sample cannot fix:
+- (b) Sample-size finding: With simple random sampling, the SD dropped from $12,268.04 at n = 1 to $3,836.57 at n = 10 and $1,171.27 at n = 100. The bias stayed small compared with the SD each time, so a larger sample made the estimates less spread out. A larger sample only changes the spread, so it cannot fix a method that is biased. It also does not make this teaching dataset represent real patients.
 
 ## 5. Challenge (hypothesis written independently, before consulting my agent)
 
