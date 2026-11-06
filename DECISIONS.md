@@ -50,6 +50,8 @@ value for modified rows). Keep each result in its own row: never pool estimates.
 | Challenge | modified | Systematic | top 100 smoker = yes rows spaced every 13.38 rows | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$582.23 | $8,211.52 | $8,232.13 |
 | Challenge | baseline | Stratified | smoker, proportional allocation | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$22.77 | $724.44 | $724.80 |
 | Challenge | modified | Stratified | smoker, proportional allocation, modified copy | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$44.57 | $735.78 | $737.12 |
+| Challenge | baseline | Simple random | without replacement | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$16.70 | $1,171.27 | $1,171.39 |
+| Challenge | modified | Simple random | without replacement, modified copy | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$35.19 | $1,190.82 | $1,191.34 |
 
 The simple random n = 100 row is also the n = 100 sample-size result when the population and
 settings match. If I reran it with different settings, I add a separate row. All four challenge
@@ -74,8 +76,14 @@ Hypothesis, written before I consult my agent:
 
 After I test it:
 
-- Test settings (conditions, methods, alternative method or correction, n, seeds); results are in the table above:
-- (c) Challenge interpretation: did the evidence support my hypothesis? Bias versus variability, other explanations, what the alternative or correction showed, and any dated revision (keep the original above):
+- Test settings (conditions, methods, alternative method or correction, n, seeds); results are in the table above: I tested the baseline file and the modified copy. I ran systematic, stratified on smoker, and simple random on both, all with n = 100, seed 2026, and 1,000 Monte Carlo repetitions.
+- (c) Challenge interpretation: did the evidence support my hypothesis? Bias versus variability, other explanations, what the alternative or correction showed, and any dated revision (keep the original above): My hypothesis was mostly supported. The systematic SD on the modified copy was $8,211.52, which is 8.66 times the baseline SD of $947.90. The RMSE went up 8.68 times, from $948.08 to $8,232.13. Both are well above my "at least double" and my 1.25 cutoff. The dot plot also matched my prediction. Most systematic estimates were bunched below the true mean, and a few were spread far above it. Stratified had an SD about 38% lower than simple random on both files, which beats my 25% goal. Simple random and stratified changed by only 1.02 times in both SD and RMSE on the copy, which is within my 10% limit.
+
+  I expected the bias to stay near zero, but the systematic bias rose from $18.63 to $582.23. It is still small next to the SD, so the main change was variability. This could be simulation noise, since I only ran one seed. Also, I built the pattern on purpose, so it does not show that real files would act the same way.
+
+  Stratified on smoker did not use row order, so the reordering barely changed it. Its SD was $724.44 on the baseline and $735.78 on the copy.
+
+  Dated revision: 11/5/26. No revision. My hypothesis stays the same.
 
 ## 6. AI use
 
