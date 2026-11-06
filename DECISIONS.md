@@ -25,9 +25,9 @@ my agent about it, and do not edit it afterwards; add a dated revision below ins
 
 For each stage: the option I chose, why, and what it is meant to help a user learn.
 
-- Stage 2, visualization (include one visual feature meant to reveal a sampling problem):
-- Stage 3, sampling interactions and stratification column:
-- Stage 4, presentation of the method comparison and sample-size experiments:
+- Stage 2, visualization (include one visual feature meant to reveal a sampling problem): I chose a bar chart with one bar per person in file order. It shows everyone at once and where the sampled people sit in the file. It should help a user see how a sample is spread out and how far its estimate is from the true mean. The visual feature is the sampled bars, which are thick with a dot on top. If they bunch up or follow a pattern, the sample may not represent the file. The true mean and the sample estimate are two lines, so a gap between them shows the sample's error.
+- Stage 3, sampling interactions and stratification column: Users can pick the method, n, and the seed, and the same seed gives the same sample. I stratified on smoker status. Smokers average $32,050.23 and non-smokers average $8,434.27, so it separates high and low charges well. This should help a user see how the methods choose people differently, and how grouping people first can make the estimate steadier.
+- Stage 4, presentation of the method comparison and sample-size experiments: Each experiment has its own tab. Each result is a row of dots, one dot per estimate, next to its bias, SD, and RMSE. The dots show the spread and the center, and the numbers back them up. This should help a user understand bias versus variability, and how sample size changes the spread.
 - Stage 5, challenge controls and my alternative method or correction:
 
 ## 3. Results table
