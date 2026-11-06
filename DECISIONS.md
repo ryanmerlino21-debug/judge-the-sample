@@ -87,6 +87,6 @@ After I test it:
 
 ## 6. AI use
 
-- Tools used:
-- What I asked my agent to do, and what I checked myself:
-- Automated checks my agent reported (I did not let it interpret my results):
+- Tools used: Claude Code (Sonnet 5.5).
+- What I asked my agent to do, and what I checked myself: I asked Claude Code to build the app: React and Vite, the shared sampling module, all the charts and tabs, run_app.sh, the automated tests, and the GitHub Pages deployment. It also created the GitHub repo and pushed the code. I told it to make the design choices it could, and it showed me visualization options. I picked the row-order bar chart over the other versions and had it redesign the look several times. After I wrote my hypothesis, I had it build the Challenge tab to match. I chose the scenario, ran every experiment in the app myself, and recorded the results. I also gave Claude Code my drafts for each section. It checked them against my results table and the data and flagged missing items, numbers that didn't match, and unclear wording. It did not change my conclusions, and I revised the drafts myself.
+- Automated checks my agent reported (I did not let it interpret my results): Claude Code reported 16 passing tests from npm test and a successful production build. The tests cover the sampling rules, allocation totals, reproducibility, exact enumeration, RMSE² = bias² + SD², the modified-copy reordering, and CSV parsing. They are technical checks and do not report any results from my experiments.
