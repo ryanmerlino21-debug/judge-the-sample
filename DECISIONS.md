@@ -64,13 +64,13 @@ rows use the same n; a challenge baseline row may repeat a matching stage 4 resu
 
 Hypothesis, written before I consult my agent:
 
-- Date written:
-- Method I chose to challenge:
-- The change to the population or its ordering:
-- Why the selection rule would interact with that change:
-- Evidence I expect across repeated samples:
-- Alternative method or correction I will compare, and why:
-- Evidence that would contradict my hypothesis:
+- Date written: 11/5/26
+- Method I chose to challenge: Systematic sampling with a random start at n = 100.
+- The change to the population or its ordering: In a labeled copy of the file, I will space out the 100 highest-charge smokers so there is one about every 13.38 rows, starting at the top. The other rows keep their original relative order. The true mean does not change, and I will confirm it matches the original.
+- Why the selection rule would interact with that change: Systematic sampling picks one row every 13.38 rows from a random starting point. In the copy, the high-cost smokers are spaced the same way. A start near the top of the file lands on almost all of them, and other starts land on almost none.
+- Evidence I expect across repeated samples: Using 1,000 Monte Carlo repetitions at n = 100 with a recorded seed, I expect most systematic estimates on the copy to fall below the true mean and a few to fall far above it. The SD and RMSE should be at least double those on the original, and bias should stay near zero. SRS and stratified should stay within 10% of their original SD and RMSE.
+- Alternative method or correction I will compare, and why: Stratified sampling on smoker status. It does not use row order. Smokers average $32,050.23 and non-smokers average $8,434.27, so I expect its SD to be at least 25% smaller than SRS on both files.
+- Evidence that would contradict my hypothesis: My hypothesis would be wrong if the systematic SD on the copy is less than 1.25 times the SD on the original. It would also be wrong if stratified SD is less than 10% smaller than SRS on either file, or if it changes by more than 10% on the copy.
 
 After I test it:
 
