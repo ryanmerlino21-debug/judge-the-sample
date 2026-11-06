@@ -1,13 +1,13 @@
+App link: https://ryanmerlino21-debug.github.io/judge-the-sample/
+
 # Judge the Sample: my sampling app
 
-<!-- If your course asks for a public app, put its link on the next line. Otherwise delete this comment. -->
-App link (optional): https://ryanmerlino21-debug.github.io/judge-the-sample/
 
 **Central question:** Which sampling method would you trust for this population, at what sample size, and with what limits?
 
 - **Scenario:** healthcare costs
 - **Data file:** `data/healthcare_costs.csv` (source, licence and provenance in `data/README.md`)
-- **Seed(s) used for my evidence** (exact enumeration needs no seed): 2026
+- **Seed(s) used for my evidence** (exact enumeration needs no seed): 2026 (I also tested 481920)
 
 ## Run it on your computer
 
