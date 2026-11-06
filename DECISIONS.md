@@ -41,15 +41,15 @@ value for modified rows). Keep each result in its own row: never pool estimates.
 
 | Experiment | Population or condition | Method | Settings | Seed (or exact) | n | Repetitions or starts | Type | True mean | Bias | SD | RMSE |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Methods at n = 100 | baseline | Simple random | | | 100 | | | | | | |
-| Methods at n = 100 | baseline | Systematic | | | 100 | | | | | | |
-| Methods at n = 100 | baseline | Stratified | | | 100 | | | | | | |
-| Sample size | baseline | Simple random | | | 1 | | | | | | |
-| Sample size | baseline | Simple random | | | 10 | | | | | | |
-| Challenge | baseline | (method I challenged) | | | | | | | | | |
-| Challenge | modified | (method I challenged) | | | | | | | | | |
-| Challenge | baseline | (alternative or correction) | | | | | | | | | |
-| Challenge | modified | (alternative or correction) | | | | | | | | | |
+| Methods at n = 100 | baseline | Simple random | without replacement | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$16.70 | $1,171.27 | $1,171.39 |
+| Methods at n = 100 | baseline | Systematic | random start, fractional interval k = 13.38 | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$18.63 | $947.90 | $948.08 |
+| Methods at n = 100 | baseline | Stratified | smoker, proportional allocation (largest remainder, min 1 per stratum) | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$22.77 | $724.44 | $724.80 |
+| Sample size | baseline | Simple random | without replacement | 2026 | 1 | 1,000 | Monte Carlo | $13,270.42 | +$305.14 | $12,268.04 | $12,271.83 |
+| Sample size | baseline | Simple random | without replacement | 2026 | 10 | 1,000 | Monte Carlo | $13,270.42 | -$28.31 | $3,836.57 | $3,836.68 |
+| Challenge | baseline | Systematic | random start, fractional interval k = 13.38 | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$18.63 | $947.90 | $948.08 |
+| Challenge | modified | Systematic | top 100 smoker = yes rows spaced every 13.38 rows | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$582.23 | $8,211.52 | $8,232.13 |
+| Challenge | baseline | Stratified | smoker, proportional allocation | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$22.77 | $724.44 | $724.80 |
+| Challenge | modified | Stratified | smoker, proportional allocation, modified copy | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$44.57 | $735.78 | $737.12 |
 
 The simple random n = 100 row is also the n = 100 sample-size result when the population and
 settings match. If I reran it with different settings, I add a separate row. All four challenge
