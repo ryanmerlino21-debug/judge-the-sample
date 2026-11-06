@@ -7,7 +7,7 @@ App link (optional): https://ryanmerlino21-debug.github.io/judge-the-sample/
 
 - **Scenario:** healthcare costs
 - **Data file:** `data/healthcare_costs.csv` (source, licence and provenance in `data/README.md`)
-- **Seed(s) used for my evidence** (exact enumeration needs no seed):
+- **Seed(s) used for my evidence** (exact enumeration needs no seed): 2026
 
 ## Run it on your computer
 
