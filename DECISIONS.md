@@ -13,13 +13,13 @@ my agent about it, and do not edit it afterwards; add a dated revision below ins
 
 ## 1. Population and target
 
-- Scenario and file:
-- One row means:
-- Number of rows (N):
-- Row order, and what it means in this file:
-- Target column and units:
+- Scenario and file: Healthcare costs, using healthcare_costs.csv.
+- One row means: One person.
+- Number of rows (N): 1,338.
+- Row order, and what it means in this file: The rows are in the same order as the source file. The order has no meaning and is not a time sequence.
+- Target column and units: charges, in US dollars.
 - My finite population is (and what it is not):
-- True mean I calculated (and how):
+- True mean I calculated (and how): $13,270.42. I added up the charges for all 1,338 rows and divided by 1,338.
 
 ## 2. Design choices
 
