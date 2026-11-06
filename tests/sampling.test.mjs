@@ -136,3 +136,26 @@ test("describe: known-answer summary", () => {
   assert.equal(d.q1, 2); assert.equal(d.q3, 4);
   assert.ok(Math.abs(d.sd - Math.sqrt(2)) < 1e-12);
 });
+
+test("spaceRows: known-answer placement, permutation, true mean unchanged, original untouched", () => {
+  const pop = { values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], groups: { g: ["x", "x", "x", "x", "x", "x", "x", "a", "a", "a"] } };
+  const snapshot = JSON.stringify(pop);
+  const m = S.spaceRows(pop, { col: "g", value: "a", count: 2, interval: 4 });
+  assert.equal(JSON.stringify(pop), snapshot);                    // original unchanged
+  assert.deepEqual(m.movedPositions, [0, 4]);                      // round(1)=1, round(5)=5 -> 0-based 0 and 4
+  assert.deepEqual(m.values, [9, 1, 2, 3, 10, 4, 5, 6, 7, 8]);     // top 2 of group a (10, 9) keep original relative order (9 then 10)
+  assert.deepEqual([...m.order].sort((a, b) => a - b), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.ok(Math.abs(S.trueMean(m.values) - S.trueMean(pop.values)) < 1e-12);
+});
+
+test("spaceRows: 100 spaced rows at interval 13.38 on N=1338 are distinct, in range, nearest-row rounded", () => {
+  const N = 1338, groups = { s: Array.from({ length: N }, (_, i) => (i % 5 === 0 ? "yes" : "no")) };
+  const pop = { values: Array.from({ length: N }, (_, i) => (i * 7919) % 1000), groups };
+  const m = S.spaceRows(pop, { col: "s", value: "yes", count: 100, interval: N / 100 });
+  assert.equal(new Set(m.movedPositions).size, 100);
+  assert.ok(m.movedPositions.every((p) => p >= 0 && p < N));
+  m.movedPositions.forEach((p, j) => assert.equal(p, Math.round(1 + j * 13.38) - 1));
+  assert.ok(m.movedPositions.every((p, j) => m.groups.s[p] === "yes"));
+  assert.ok(Math.abs(S.trueMean(m.values) - S.trueMean(pop.values)) < 1e-9);
+  assert.throws(() => S.spaceRows(pop, { col: "s", value: "yes", count: 100, interval: 20 }));
+});

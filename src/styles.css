@@ -74,7 +74,7 @@ details { margin-top: 10px; } summary { cursor: pointer; color: var(--accent); f
 .note { font-size: 13px; color: var(--ink2); max-width: 760px; }
 footer { color: var(--muted); font-size: 12.5px; padding: 20px 0 40px; border-top: 1px solid var(--grid); margin-top: 20px; }
 
-.strip-grid { display: grid; grid-template-columns: 170px 1fr 92px 92px 92px; align-items: center; column-gap: 8px; }
+.strip-grid { display: grid; grid-template-columns: 200px 1fr 92px 92px 92px; align-items: center; column-gap: 8px; }
 .strip-grid .hd { font-size: 12px; font-weight: 600; color: var(--ink2); padding-bottom: 6px; border-bottom: 1px solid var(--grid); }
 .strip-grid .cell { padding: 4px 0; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; font-size: 14px; }
 .strip-grid .num { text-align: right; font-weight: 600; }

@@ -407,6 +407,187 @@ function StripAxis({ domain }) {
   );
 }
 
+
+// ------------------------------------------------------------- Challenge (stage 5)
+function ChallengeTab() {
+  const [col, setCol] = useState("smoker");
+  const [value, setValue] = useState("yes");
+  const [count, setCount] = useState(100);
+  const [n, setN] = useState(100);
+  const [matchInterval, setMatchInterval] = useState(true);
+  const [interval, setIntervalVal] = useState(N / 100);
+  const [strataCol, setStrataCol] = useState("smoker");
+  const [seed, setSeed] = useState(2026);
+  const [reps, setReps] = useState(1000);
+  const [zoom, setZoom] = useState("shared");
+  const [out, setOut] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const nn = Math.min(N, Math.max(1, Math.floor(n) || 1));
+  const k = matchInterval ? N / nn : Number(interval) || 1;
+  const values = groupCounts[col].map(([g]) => g);
+
+  const built = useMemo(() => {
+    try { return { mod: S.spaceRows(population, { col, value, count: Number(count) || 1, interval: k }) }; }
+    catch (e) { return { error: e.message }; }
+  }, [col, value, count, k]);
+
+  const changeCol = (c) => { setCol(c); setValue(groupCounts[c][0][0]); };
+
+  const run = () => {
+    if (!built.mod) return;
+    setBusy(true);
+    setTimeout(() => {
+      const mod = built.mod;
+      const pops = [["baseline", population], ["modified", mod]];
+      const results = [];
+      for (const method of ["systematic", "stratified", "srs"]) {
+        for (const [label, pop] of pops) {
+          results.push({ label, ...S.repeatedResult({ method, pop, n: nn, reps, seed, strataCol }) });
+        }
+      }
+      setOut({ seed, reps, n: nn, strataCol, k, col, value, count: Number(count), results, modMean: S.trueMean(mod.values) });
+      setBusy(false);
+    }, 10);
+  };
+
+  const modDesc = out && `top ${out.count} ${out.col}=${out.value} rows spaced every ${out.k.toFixed(2)} rows (nearest row)`;
+  const rowsOf = () => out.results.map((r) => ["Challenge", r.label === "modified" ? `modified (${modDesc})` : "baseline", METHODS[r.method], r.settings.replace(/,/g, ";"), r.type === "exact" ? "exact" : r.seed, r.n, r.count, r.type, r.trueMean.toFixed(2), r.bias.toFixed(2), r.sd.toFixed(2), r.rmse.toFixed(2)]);
+  const HEAD = ["Experiment", "Population or condition", "Method", "Settings", "Seed (or exact)", "n", "Repetitions or starts", "Type", "True mean", "Bias", "SD", "RMSE"];
+  const downloadCsv = () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([[HEAD, ...rowsOf()].map((r) => r.join(",")).join("\n")], { type: "text/csv" })); a.download = "challenge-results.csv"; a.click();
+  };
+  const copyRows = async () => {
+    try { await navigator.clipboard.writeText(rowsOf().map((r) => "| " + r.join(" | ") + " |").join("\n")); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
+  };
+  const downloadCopy = () => {
+    const m = built.mod, cols = Object.keys(m.groups);
+    const csv = [["row_id", ...cols, TARGET].join(","), ...m.values.map((v, i) => [m.rowIds[i], ...cols.map((c) => m.groups[c][i]), v].join(","))].join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "healthcare_costs_MODIFIED_copy.csv"; a.click();
+  };
+
+  const shared = out ? domainFor(out.results) : null;
+  const find = (method, label) => out.results.find((r) => r.method === method && r.label === label);
+  const pct = (a, b) => ((a / b - 1) * 100);
+
+  return (
+    <>
+      <section className="block" style={{ marginBottom: 20 }}>
+        <h2>Challenge: a modified copy of the population</h2>
+        <p className="sub">Set up the change your hypothesis describes. The original file is never altered: the app builds a <b>labelled modified copy</b> in memory, reordering rows only, and measures every result against the true mean of the population it was drawn from. Sampling rules and estimators are exactly the ones used everywhere else in the app.</p>
+      </section>
+
+      <div className="toolbar">
+        <label>Rows to space out: group column
+          <select value={col} onChange={(e) => changeCol(e.target.value)}>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select>
+        </label>
+        <label>Group value
+          <select value={value} onChange={(e) => setValue(e.target.value)}>{values.map((v) => <option key={v}>{v}</option>)}</select>
+        </label>
+        <label>How many (highest charges)
+          <input type="number" min="1" value={count} onChange={(e) => setCount(e.target.value === "" ? "" : Number(e.target.value))} />
+        </label>
+        <label>Sample size n (same for every result)
+          <input type="number" min="1" max={N} value={n} onChange={(e) => setN(e.target.value === "" ? "" : Number(e.target.value))} />
+        </label>
+        <label>Spacing (rows between them)
+          <input type="number" step="0.01" min="1" disabled={matchInterval} value={matchInterval ? k.toFixed(2) : interval} onChange={(e) => setIntervalVal(e.target.value)} />
+          <span style={{ fontSize: 12 }}><input type="checkbox" checked={matchInterval} onChange={(e) => setMatchInterval(e.target.checked)} style={{ minWidth: 0, width: "auto" }} /> match N ÷ n</span>
+        </label>
+        <label>Stratify on
+          <select value={strataCol} onChange={(e) => setStrataCol(e.target.value)}>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select>
+        </label>
+        <SeedField seed={seed} setSeed={setSeed} />
+        <label>Repetitions
+          <select value={reps} onChange={(e) => setReps(Number(e.target.value))}>{[100, 250, 500, 1000].map((x) => <option key={x}>{x}</option>)}</select>
+        </label>
+        <button className="btn" onClick={run} disabled={busy || !built.mod}>{busy ? "Running…" : out ? "Run again (replaces results)" : "Run challenge"}</button>
+      </div>
+
+      {built.error ? <div className="err"><b>Can't build the modified copy.</b> {built.error}</div> : (
+        <section className="block">
+          <h2>The modified copy <span className="tag gold">Modified population</span></h2>
+          <p className="sub">Only row order changes. Coloured bars are the {Number(count)} highest-charge rows with {col} = {value}, placed at positions round(1 + j × {k.toFixed(2)}), j = 0, 1, 2, …, in their original relative order among themselves. All other rows keep their original relative order.</p>
+          <div className="chart">
+            <RowBars values={built.mod.values} sampled={built.mod.movedPositions} colorOf={() => ACCENT} groupOf={built.mod.groups[col]} trueMean={S.trueMean(built.mod.values)} est={null} />
+            <div className="legend">
+              <span><span className="sw sq" style={{ background: "var(--pop)" }} />other rows (original relative order)</span>
+              <span><span className="sw sq" style={{ background: ACCENT }} />spaced-out rows</span>
+              <span><span className="key dash" /> true mean of this copy</span>
+            </div>
+          </div>
+          <div className="cards three">
+            <div className="stat c2"><div className="l">True mean, baseline</div><div className="v">{money(TRUE_MEAN)}</div></div>
+            <div className="stat c2"><div className="l">True mean, modified copy (recalculated)</div><div className="v">{money(S.trueMean(built.mod.values))}</div></div>
+            <div className="stat c3"><div className="l">Reordering changes the true mean?</div><div className="v" style={{ fontSize: 22 }}>{Math.abs(S.trueMean(built.mod.values) - TRUE_MEAN) < 1e-6 ? "No: identical" : "Yes: differs"}</div></div>
+          </div>
+          <div className="actions"><button className="btn ghost" onClick={downloadCopy}>Download the modified copy (CSV)</button></div>
+          <p className="meta">The original <code>{population.file}</code> is unchanged on disk. The copy exists only in this page unless you download it.</p>
+        </section>
+      )}
+
+      {out && (
+        <section className="block">
+          <h2>Results at n = {out.n}</h2>
+          <p className="sub">Each row is one condition on its own, measured against the true mean of the population it was drawn from. Baseline and modified results are shown together but never pooled.</p>
+          <div className="chart">
+            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+              <div className="legend" style={{ marginTop: 0 }}>
+                <span><span className="sw" style={{ background: ACCENT, opacity: 0.5 }} />one dot = one sample's estimate</span>
+                <span><span className="key" style={{ borderTop: 0, width: 3, height: 12, background: "var(--ink)", borderRadius: 2 }} /> mean of the estimates</span>
+                <span><span className="key dash" /> true mean of that population</span>
+              </div>
+              <label className="small muted">Scale{" "}
+                <select value={zoom} onChange={(e) => setZoom(e.target.value)} style={{ font: "inherit", padding: "3px 6px", borderRadius: 6 }}>
+                  <option value="shared">same for every row</option><option value="each">zoom each row</option>
+                </select>
+              </label>
+            </div>
+            <div className="strip-grid">
+              <div className="hd">Population · method</div><div className="hd">Estimates, in US dollars</div>
+              <div className="hd" style={{ textAlign: "right" }}>Bias</div><div className="hd" style={{ textAlign: "right" }}>SD</div><div className="hd" style={{ textAlign: "right" }}>RMSE</div>
+              {out.results.map((r, i) => (
+                <React.Fragment key={i}>
+                  <div className="cell name">
+                    {METHODS[r.method]} <span className="tag" style={r.label === "modified" ? { background: "#f5ecd3", color: "#6b5314" } : undefined}>{r.label}</span> <span className="tag">{r.type}</span>
+                    <small>true mean {money(r.trueMean)} · {r.settings}</small>
+                  </div>
+                  <div className="cell"><StripRow estimates={r.estimates} domain={zoom === "each" ? domainFor([r]) : shared} trueMean={r.trueMean} meanOfEstimates={r.meanOfEstimates} axis={zoom === "each"} label={`${METHODS[r.method]} ${r.label}: ${r.count} estimates`} /></div>
+                  <div className="cell num">{signed(r.bias)}</div>
+                  <div className="cell num">{money(r.sd)}</div>
+                  <div className="cell num">{money(r.rmse)}</div>
+                </React.Fragment>
+              ))}
+            </div>
+            {zoom === "shared" && <div className="strip-grid"><div /><StripAxis domain={shared} /><div /><div /><div /></div>}
+          </div>
+
+          <h3 style={{ marginTop: 18 }}>Ratios and differences (arithmetic from the table above)</h3>
+          <table>
+            <thead><tr><th>Method</th><th className="num">SD: modified ÷ baseline</th><th className="num">RMSE: modified ÷ baseline</th><th className="num">Bias: baseline</th><th className="num">Bias: modified</th></tr></thead>
+            <tbody>{["srs", "systematic", "stratified"].map((m) => { const b = find(m, "baseline"), x = find(m, "modified");
+              return <tr key={m}><td>{METHODS[m]}</td><td className="num">{(x.sd / b.sd).toFixed(2)}</td><td className="num">{(x.rmse / b.rmse).toFixed(2)}</td><td className="num">{signed(b.bias)}</td><td className="num">{signed(x.bias)}</td></tr>; })}</tbody>
+          </table>
+          <table style={{ marginTop: 10 }}>
+            <thead><tr><th>Population</th><th className="num">SD: simple random</th><th className="num">SD: stratified</th><th className="num">Stratified SD relative to simple random</th></tr></thead>
+            <tbody>{["baseline", "modified"].map((l) => { const a = find("srs", l), b = find("stratified", l);
+              return <tr key={l}><td>{l}</td><td className="num">{money(a.sd)}</td><td className="num">{money(b.sd)}</td><td className="num">{pct(b.sd, a.sd).toFixed(1)}%</td></tr>; })}</tbody>
+          </table>
+
+          <p className="meta">Settings: n = {out.n} · seed {out.seed} · repetitions {out.reps} (Monte Carlo rows) · stratified on {out.strataCol} · modified copy: {modDesc}. Exact rows (whole-number systematic interval only) list every start and need no seed. The simple random rows are extra context; the four required results are systematic and stratified on both populations.</p>
+          <p className="note">With 100 repetitions, small differences between methods cannot be separated reliably; 1,000 gives more stable bias, SD and RMSE. Rerun with different seeds to check that conclusions hold. A nonzero bias in a Monte Carlo result may be simulation noise: the specified designs are unbiased for the finite-population mean.</p>
+          <div className="actions">
+            <button className="btn ghost" onClick={downloadCsv}>Download results (CSV)</button>
+            <button className="btn ghost" onClick={copyRows}>{copied ? "Copied" : "Copy rows for the DECISIONS.md table"}</button>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
 function GlossaryTab() {
   const terms = [
     ["Unit (one row)", "The thing each row describes. Here: one person, a beneficiary record."],
@@ -426,6 +607,7 @@ function GlossaryTab() {
     ["Repetitions", "How many separate samples are drawn. Separate from n, the number of rows in one sample."],
     ["Exact enumeration", "Listing every possible start (whole-number systematic sampling) instead of drawing random samples. Labelled “exact”."],
     ["Monte Carlo", "Repeated random sampling with a seeded random number generator. Labelled “Monte Carlo”."],
+    ["Modified copy", "A reordered copy of the population built in memory for the challenge. The original file is never altered; the copy is always labelled “modified”, and its true mean is recalculated from its own rows."],
     ["Seed", "The starting value of the random number generator. The same seed and settings always reproduce the same samples and results."],
   ];
   return (
@@ -437,7 +619,7 @@ function GlossaryTab() {
 }
 
 // ------------------------------------------------------------------ Shell
-const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["gloss", "Glossary"]];
+const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["challenge", "Challenge"], ["gloss", "Glossary"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "pop");
@@ -456,6 +638,7 @@ export default function App() {
       </nav>
       <main>
         {tab === "pop" && <PopulationTab />}
+        {tab === "challenge" && <ChallengeTab />}
         {tab === "gloss" && <GlossaryTab />}
         {tab === "explore" && <ExploreTab />}
         {tab === "methods" && <ExperimentTab key="m" rowLabel="Method" expName="Methods at n = 100" title="Experiment A: three methods at n = 100" intro="Simple random, systematic and stratified sampling on the baseline population, each with the same total n = 100 and the same seed." conditions={[{ method: "srs", n: 100 }, { method: "systematic", n: 100 }, { method: "stratified", n: 100 }]} />}

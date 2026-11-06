@@ -232,3 +232,36 @@ export function describe(values) {
   const sd = Math.sqrt(values.reduce((a, v) => a + (v - m) ** 2, 0) / values.length); // population SD (divides by N)
   return { n: values.length, mean: m, sd, min: sorted[0], q1: quantile(sorted, 0.25), median: quantile(sorted, 0.5), q3: quantile(sorted, 0.75), max: sorted[sorted.length - 1] };
 }
+
+// ---------- modified copy (stage 5): space out the top rows of one group ----------
+// Builds a REORDERED COPY; the input population is never changed.
+// Takes the `count` highest-target rows whose group column equals `value`
+// (ties broken by earlier row), keeps them in their original relative order, and
+// puts them at 1-based positions round(1 + j * interval), j = 0..count-1.
+// All other rows keep their original relative order in the remaining positions.
+export function spaceRows(pop, { col, value, count, interval }) {
+  const N = pop.values.length;
+  const cand = [];
+  for (let i = 0; i < N; i++) if (pop.groups[col][i] === value) cand.push(i);
+  if (cand.length < count) throw new Error(`Only ${cand.length} rows have ${col} = ${value}; cannot space out ${count}`);
+  cand.sort((a, b) => pop.values[b] - pop.values[a] || a - b);
+  const chosen = cand.slice(0, count).sort((a, b) => a - b);
+  const targets = chosen.map((_, j) => Math.round(1 + j * interval) - 1);
+  if (targets.some((t, j) => t >= N || (j > 0 && t <= targets[j - 1]))) {
+    throw new Error("These settings do not fit in the file: positions run past the last row or repeat. Use a smaller interval or fewer rows.");
+  }
+  const isChosen = new Set(chosen);
+  const rest = [];
+  for (let i = 0; i < N; i++) if (!isChosen.has(i)) rest.push(i);
+  const order = new Array(N);
+  chosen.forEach((idx, j) => { order[targets[j]] = idx; });
+  let r = 0;
+  for (let p = 0; p < N; p++) if (order[p] === undefined) order[p] = rest[r++];
+  return {
+    values: order.map((i) => pop.values[i]),
+    groups: Object.fromEntries(Object.entries(pop.groups).map(([c, arr]) => [c, order.map((i) => arr[i])])),
+    rowIds: pop.rowIds ? order.map((i) => pop.rowIds[i]) : undefined,
+    movedPositions: targets,
+    order,
+  };
+}
