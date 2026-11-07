@@ -3,6 +3,7 @@ import { population } from "./data.js";
 import * as S from "./sampling.js";
 import { niceTicks, money, money0, moneyK, signed, ACCENT } from "./charts.jsx";
 import { HowTo, Toggle, SaveBtn } from "./extras.jsx";
+import { cache } from "./store.js";
 
 const fmtMetric = { bias: signed, sd: money, rmse: money };
 const metricName = { bias: "Bias", sd: "SD", rmse: "RMSE" };
@@ -48,7 +49,7 @@ function SeedDots({ rows, metric, seeds }) {
 export function SeedCheck({ baseSeed, reps, runSeed, rowLabel, disabled = false, name = "seed-check" }) {
   const [count, setCount] = useState(5);
   const [metric, setMetric] = useState("sd");
-  const [res, setRes] = useState(null);
+  const [res, setRes] = useState(() => cache[name] || null);
   const [busy, setBusy] = useState(false);
   const [prog, setProg] = useState(0);
 
@@ -56,7 +57,8 @@ export function SeedCheck({ baseSeed, reps, runSeed, rowLabel, disabled = false,
     setBusy(true); setProg(0);
     const seeds = S.seedList(baseSeed, count), byseed = [];
     for (let j = 0; j < seeds.length; j++) { await sleep(); byseed.push(runSeed(seeds[j])); setProg(j + 1); }
-    setRes({ seeds, byseed, reps });
+    cache[name] = { seeds, byseed, reps };
+    setRes(cache[name]);
     setBusy(false);
   };
 
@@ -139,7 +141,7 @@ function SizeCurve({ rows, metric, logX }) {
 }
 
 export function SampleSizeCurve({ seed, reps }) {
-  const [res, setRes] = useState(null);
+  const [res, setRes] = useState(() => cache["size-curve"] || null);
   const [metric, setMetric] = useState("sd");
   const [logX, setLogX] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -152,7 +154,8 @@ export function SampleSizeCurve({ seed, reps }) {
       out.push(S.repeatedResult({ method: "srs", pop: population, n: SIZES[j], reps, seed }));
       setProg(j + 1);
     }
-    setRes({ rows: out, seed, reps });
+    cache["size-curve"] = { rows: out, seed, reps };
+    setRes(cache["size-curve"]);
     setBusy(false);
   };
   return (

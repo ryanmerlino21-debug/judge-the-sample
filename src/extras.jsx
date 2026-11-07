@@ -390,3 +390,61 @@ export function ReproduceCard({ text }) {
     <p className="meta"><b>To reproduce this result:</b> {text} · <button type="button" className="linkbtn" onClick={copy}>{ok ? "Copied" : "Copy these settings as text"}</button></p>
   );
 }
+
+// ---------------------------------------------------------------- how far off is this estimate?
+export function EstimateRuler({ trueMean, est }) {
+  const [zoom, setZoom] = useState(true);
+  const top = Math.ceil(Math.max(...population.values) / 10000) * 10000;
+  const gap = Math.abs(est - trueMean);
+  const pad = Math.max(gap * 1.2, 400);
+  const lo = zoom ? Math.max(0, Math.min(est, trueMean) - pad) : 0, hi = zoom ? Math.max(est, trueMean) + pad : top;
+  const W = 900, L = 24, R = 24, y = 78, H = 150;
+  const x = (v) => L + ((v - lo) / (hi - lo || 1)) * (W - L - R);
+  const ticks = zoom ? (() => { const out = []; const step = (hi - lo) / 5, p10 = 10 ** Math.floor(Math.log10(step)), f = step / p10, st = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p10; for (let t = Math.ceil(lo / st) * st; t <= hi; t += st) out.push(t); return out; })() : [0, 10000, 20000, 30000, 40000, 50000, 60000, 70000].filter((t) => t <= hi);
+  const left = Math.min(x(est), x(trueMean)), right = Math.max(x(est), x(trueMean));
+  return (
+    <>
+      <div className="opts"><Toggle label="Scale" value={zoom ? "zoom" : "full"} onChange={(v) => setZoom(v === "zoom")} options={[["zoom", "Zoom in on the gap"], ["full", "Full range of charges"]]} /></div>
+      <div className="chart">
+        <SaveBtn name="estimate-vs-true-mean" />
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`The sample estimate ${money(est)} and the true mean ${money(trueMean)} on a number line; the gap is ${signed(est - trueMean)}`}>
+          <line x1={L} x2={W - R} y1={y} y2={y} strokeWidth="2" style={{ stroke: "var(--axis)" }} />
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={x(t)} x2={x(t)} y1={y - 5} y2={y + 5} strokeWidth="1.5" style={{ stroke: "var(--axis)" }} />
+              <text x={x(t)} y={y + 24} fontSize="11" textAnchor="middle" style={{ fill: "var(--muted)" }}>{money0(t)}</text>
+            </g>
+          ))}
+          {right - left > 2 && <rect x={left} y={y - 7} width={right - left} height="14" rx="3" style={{ fill: "var(--accent)" }} opacity="0.25"><title>{`Estimate minus true mean: ${signed(est - trueMean)}`}</title></rect>}
+          <line x1={x(trueMean)} x2={x(trueMean)} y1={26} y2={y + 12} strokeWidth="3" strokeDasharray="6 4" style={{ stroke: "var(--truec)" }} />
+          <line x1={x(est)} x2={x(est)} y1={26} y2={y + 12} strokeWidth="3" style={{ stroke: "var(--samplec)" }} />
+          <circle cx={x(trueMean)} cy={y} r="6" style={{ fill: "var(--truec)", stroke: "var(--surface)" }} strokeWidth="2" />
+          <circle cx={x(est)} cy={y} r="6" style={{ fill: "var(--samplec)", stroke: "var(--surface)" }} strokeWidth="2" />
+          <text x={x(trueMean) + (est >= trueMean ? -8 : 8)} y="20" fontSize="12.5" fontWeight="600" textAnchor={est >= trueMean ? "end" : "start"} style={{ fill: "var(--ink2)" }}>True mean {money(trueMean)}</text>
+          <text x={x(est) + (est >= trueMean ? 8 : -8)} y="20" fontSize="12.5" fontWeight="700" textAnchor={est >= trueMean ? "start" : "end"} style={{ fill: "var(--ink)" }}>Sample estimate {money(est)}</text>
+          <text x={(left + right) / 2} y={y + 50} fontSize="13" fontWeight="700" textAnchor="middle" style={{ fill: "var(--ink)" }}>{signed(est - trueMean)}</text>
+        </svg>
+        <HowTo>The gold dashed line is the true mean of everyone and the dark line is this sample's estimate. The shaded stretch between them is the error of this one sample: the estimate minus the true mean. One sample's error says little about how the method behaves in general; the experiment tabs show many samples.</HowTo>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- exactly who was picked
+export function SampledPeople({ indices }) {
+  const cap = 200, shown = indices.slice(0, cap);
+  return (
+    <details>
+      <summary>Who was picked: the people in this sample ({indices.length})</summary>
+      <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
+        <table>
+          <thead><tr><th className="num">Row</th><th className="num">Age</th><th>Sex</th><th>Smoker</th><th>Region</th><th className="num">Charges</th></tr></thead>
+          <tbody>{shown.map((i) => (
+            <tr key={i}><td className="num">{population.rowIds[i]}</td><td className="num">{population.ages[i]}</td><td>{population.groups.sex[i]}</td><td>{population.groups.smoker[i]}</td><td>{population.groups.region[i]}</td><td className="num">{money(population.values[i])}</td></tr>
+          ))}</tbody>
+        </table>
+      </div>
+      {indices.length > cap && <p className="small muted">Showing the first {cap} of {indices.length} people, in file order.</p>}
+    </details>
+  );
+}

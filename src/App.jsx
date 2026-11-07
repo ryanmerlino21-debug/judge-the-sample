@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
-import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks, ReproduceCard } from "./extras.jsx";
+import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks, ReproduceCard, EstimateRuler, SampledPeople } from "./extras.jsx";
+import { getResult, setResult } from "./store.js";
+import { ResultsTab } from "./results.jsx";
 import { PatternContext } from "./ctx.js";
 import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
 import { StartHere, Walkthrough, GuideTab } from "./guide.jsx";
@@ -267,7 +269,9 @@ function ExploreTab() {
           </select>
         </label>
         <CopyLink />
+        <button type="button" className="btn ghost" onClick={() => { setMethod("srs"); setN(100); setSeed(2026); setStrataCol("smoker"); setColorBy("none"); setView("bars"); setMarkers(true); setBinW(2500); setShareMode("pair"); }}>Reset to defaults</button>
       </div>
+      {String(n) !== String(nn) && <p className="note" role="status">n was adjusted to {nn}: the sample size must be a whole number from 1 to {N.toLocaleString()}.</p>}
 
       {error ? (
         <div className="err"><b>Can't draw this sample.</b> {error}. Choose a larger n, or a different stratification column.</div>
@@ -278,6 +282,12 @@ function ExploreTab() {
             <div className="stat c1"><div className="l"><span className="key" /> This sample's estimate · single sample</div><div className="v">{money(sample.estimate)}</div></div>
             <div className="stat c5"><div className="l">Estimate − true mean</div><div className="v">{signed(sample.estimate - TRUE_MEAN)}</div></div>
           </div>
+
+          <section className="block">
+            <h2>How far off is this estimate?</h2>
+            <p className="sub">This one sample's estimate against the true mean, on a number line.</p>
+            <EstimateRuler trueMean={TRUE_MEAN} est={sample.estimate} />
+          </section>
 
           <SummaryGrid d={S.describe(idx.map((i) => population.values[i]))} />
           <p className="small muted" style={{ marginTop: -6 }}>Numbers above describe the charges of the sampled people only (this single sample). For comparison, everyone: median {money(POP_STATS.median)}, SD {money(POP_STATS.sd)}.</p>
@@ -349,6 +359,7 @@ function ExploreTab() {
               <p className="small"><b>Design that applies:</b> {design.kind}. N ÷ n = {N} ÷ {nn} = {design.k.toFixed(3).replace(/\.?0+$/, "")}.{" "}
                 {design.whole ? <>Random start r in 1..{design.k}: rows r, r+{design.k}, r+{2 * design.k}, … (start used: {sample.start}).</> : <>Start u uniform in (0, k]; rows ⌈u + j·k⌉ for j = 0..{nn - 1} (start used: {sample.start.toFixed(3)}).</>}</p>
             )}
+            <SampledPeople indices={idx} />
             <details open={idx.length <= 30}>
               <summary>Selected row numbers ({idx.length}, in file order)</summary>
               <p className="small" style={{ fontFamily: "ui-monospace, Menlo, monospace", lineHeight: 1.9, wordBreak: "break-word" }}>{idx.map((i) => i + 1).join(", ")}</p>
@@ -405,14 +416,15 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
   const [view, setView] = useState(() => param("v", "dots", ["dots", "hist"]));
   const [band, setBand] = useState(() => param("band", false));
   useUrlSync(tabKey, { seed, reps, s: strataCol, z: zoom, v: view, band });
-  const [out, setOut] = useState(null);
+  const [out, setOut] = useState(() => getResult(tabKey) || null);
   const [busy, setBusy] = useState(false);
   const needsStrata = conditions.some((c) => c.method === "stratified");
 
   const run = () => {
     setBusy(true);
     setTimeout(() => {
-      setOut({ seed, reps, strataCol, results: conditions.map((c) => S.repeatedResult({ ...c, pop: population, reps, seed, strataCol })) });
+      const o = { seed, reps, strataCol, results: conditions.map((c) => S.repeatedResult({ ...c, pop: population, reps, seed, strataCol })) };
+      setOut(o); setResult(tabKey, o);
       setBusy(false);
     }, 10);
   };
@@ -448,6 +460,7 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
         )}
         <button className="btn" onClick={run} disabled={busy}>{busy ? "Running…" : out ? "Run again (replaces results)" : "Run experiment"}</button>
         <CopyLink />
+        <button type="button" className="btn ghost" onClick={() => { setSeed(2026); setReps(100); setStrataCol("smoker"); setZoom("shared"); setView("dots"); setBand(false); }}>Reset settings</button>
       </div>
       {!out && <p className="note">Press <b>Run experiment</b>. Sample size and repetitions are separate settings: n is the number of rows in one sample; repetitions is how many separate samples are drawn.</p>}
       {out && (
@@ -552,7 +565,7 @@ function ChallengeTab() {
   const [view, setView] = useState(() => param("v", "dots", ["dots", "hist"]));
   const [band, setBand] = useState(() => param("band", false));
   const [copyView, setCopyView] = useState(() => param("cv", "bars", ["bars", "dots", "sorted"]));
-  const [out, setOut] = useState(null);
+  const [out, setOut] = useState(() => getResult("challenge") || null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -580,7 +593,8 @@ function ChallengeTab() {
           results.push({ label, ...S.repeatedResult({ method, pop, n: nn, reps, seed, strataCol }) });
         }
       }
-      setOut({ seed, reps, n: nn, strataCol, k, col, value, count: Number(count), results, modMean: S.trueMean(mod.values) });
+      const o = { seed, reps, n: nn, strataCol, k, col, value, count: Number(count), results, modMean: S.trueMean(mod.values) };
+      setOut(o); setResult("challenge", o);
       setBusy(false);
     }, 10);
   };
@@ -638,7 +652,9 @@ function ChallengeTab() {
         </label>
         <button className="btn" onClick={run} disabled={busy || !built.mod}>{busy ? "Running…" : out ? "Run again (replaces results)" : "Run challenge"}</button>
         <CopyLink />
+        <button type="button" className="btn ghost" onClick={() => { setCol("smoker"); setValue("yes"); setCount(100); setN(100); setMatchInterval(true); setIntervalVal(N / 100); setStrataCol("smoker"); setSeed(2026); setReps(1000); }}>Reset settings</button>
       </div>
+      {String(n) !== String(nn) && <p className="note" role="status">n was adjusted to {nn}: the sample size must be a whole number from 1 to {N.toLocaleString()}.</p>}
 
       {built.error ? <div className="err"><b>Can't build the modified copy.</b> {built.error}</div> : (
         <section className="block">
@@ -789,13 +805,14 @@ function GlossaryTab({ focus }) {
 }
 
 // ------------------------------------------------------------------ Shell
-const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["challenge", "Challenge"], ["guide", "Methods guide"], ["gloss", "Glossary"]];
+const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["challenge", "Challenge"], ["results", "Your results"], ["guide", "Methods guide"], ["gloss", "Glossary"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === hashTab()) ? hashTab() : "pop");
   const [focus, setFocus] = useState(null);
   const [theme, setTheme] = useState(() => { try { return localStorage.getItem("jts-theme") === "dark" ? "dark" : "light"; } catch { return "light"; } });
   const [patterns, setPatterns] = useState(() => { try { return localStorage.getItem("jts-patterns") === "1"; } catch { return false; } });
+  useEffect(() => { const t = TABS.find(([k]) => k === tab); document.title = (t ? t[1] + " · " : "") + "Judge the Sample: healthcare costs"; }, [tab]);
   useEffect(() => { document.documentElement.dataset.theme = theme; try { localStorage.setItem("jts-theme", theme); } catch { /* storage unavailable */ } }, [theme]);
   useEffect(() => { try { localStorage.setItem("jts-patterns", patterns ? "1" : "0"); } catch { /* storage unavailable */ } }, [patterns]);
   const go = (k) => { setFocus(null); setTab(k); history.replaceState(null, "", "#" + k); };
@@ -828,6 +845,7 @@ export default function App() {
         <main id="main" tabIndex={-1} style={{ outline: "none" }}>
           {tab === "pop" && <PopulationTab />}
           {tab === "challenge" && <ChallengeTab />}
+          {tab === "results" && <ResultsTab />}
           {tab === "guide" && <GuideTab />}
           {tab === "gloss" && <GlossaryTab focus={focus} />}
           {tab === "explore" && <ExploreTab />}
