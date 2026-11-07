@@ -182,3 +182,22 @@ nav.tabs { overflow-x: auto; scrollbar-width: thin; white-space: nowrap; }
 }
 
 .chart.groups { padding-top: 44px; }
+
+/* ---- round 1: progress, steps, start-here, guide table, theme switches, dark mode ---- */
+.progress { height: 8px; background: var(--grid); border-radius: 99px; overflow: hidden; margin: 0 0 16px; }
+.progress div { height: 100%; background: var(--accent); transition: width .2s; }
+ol.steps { padding-left: 22px; margin: 8px 0 12px; max-width: 860px; } ol.steps li { margin-bottom: 6px; }
+details.starthere { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid #c9a24a; border-radius: 4px; padding: 12px 18px; margin: 0 0 26px; }
+details.starthere summary { color: var(--ink); font-size: 16px; }
+table.cheat th, table.cheat td { vertical-align: top; min-width: 190px; } table.cheat th[scope="row"] { font-size: 12.5px; text-transform: none; letter-spacing: 0; color: var(--ink); width: 150px; min-width: 130px; }
+.bn-tools { position: absolute; top: 12px; right: 14px; display: flex; gap: 8px; z-index: 2; }
+.bn-tools button { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.bn-tools button:hover { background: rgba(255,255,255,.26); }
+input[type=search] { padding: 7px 9px; border: 1px solid var(--axis); border-radius: 8px; font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); min-width: 240px; }
+:root[data-theme="dark"] { color-scheme: dark; --page: #0e151c; --surface: #16212b; --ink: #e8eef4; --ink2: #b4c1cd; --muted: #8e9cab; --grid: #243241; --axis: #3a4e63; --border: rgba(255,255,255,.12); --pop: #3d5063; --accent: #5aa0f2; --s1: #5aa0f2; --s2: #e0763f; --s3: #2bb386; --s4: #d9a21f; --wash: #1c2b3a; --truec: #dcae52; --samplec: #eaf0f5; --t1: #16212b; --t2: #16212b; --t3: #16212b; --t4: #16212b; --t5: #16212b; }
+:root[data-theme="dark"] body { background-color: #0e151c; background-image: linear-gradient(rgba(120,160,200,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(120,160,200,.07) 1px, transparent 1px), radial-gradient(1000px 520px at 88% -8%, rgba(60,120,190,.22), transparent 70%), radial-gradient(800px 480px at -5% 105%, rgba(201,162,74,.10), transparent 70%), linear-gradient(180deg, #0e151c 0%, #111b24 100%); background-size: 34px 34px, 34px 34px, auto, auto, auto; }
+:root[data-theme="dark"] nav.tabs button.on { color: #fff; } :root[data-theme="dark"] nav.tabs button:hover { color: #fff; }
+:root[data-theme="dark"] button.btn.ghost { color: #9cc4f7; } :root[data-theme="dark"] .toggle button.on { background: #2f6fb8; border-color: #2f6fb8; }
+:root[data-theme="dark"] .callout { background: #2a2414; } :root[data-theme="dark"] .tag.gold { background: #3a301a; color: #e9d7a1; } :root[data-theme="dark"] .gloss dt.hl { background: #3a301a; box-shadow: 0 0 0 6px #3a301a; }
+:root[data-theme="dark"] .stat { border-top-color: var(--border); } :root[data-theme="dark"] .banner { background: linear-gradient(115deg, #0b2036 0%, #123a5e 60%, #17507c 100%); }
+:root[data-theme="dark"] .savebtn, :root[data-theme="dark"] button.help { background: var(--surface); color: var(--ink2); }

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useContext } from "react";
+import { PatternContext } from "./ctx.js";
 
 export const money = (x, d = 2) => (x < 0 ? "-$" : "$") + Math.abs(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 export const money0 = (x) => money(x, 0);
@@ -9,6 +10,27 @@ export const signed = (x) => (x >= 0 ? "+" : "−") + money(Math.abs(x));
 export const SLOTS = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)"];
 export const ACCENT = "var(--accent)";
 const fill = (c) => ({ fill: c });
+
+// Texture fills: used only when "Patterns" is switched on, so identity never depends on hue alone.
+export function PatternDefs() {
+  const on = useContext(PatternContext);
+  if (!on) return null;
+  return (
+    <defs>
+      {SLOTS.map((c, i) => (
+        <pattern key={i} id={`pat${i}`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform={i === 2 ? "rotate(-45)" : "rotate(45)"}>
+          <rect width="8" height="8" style={fill(c)} />
+          {(i === 1 || i === 2) && <line x1="0" y1="0" x2="0" y2="8" strokeWidth="3" style={{ stroke: "var(--surface)" }} />}
+          {i === 3 && <circle cx="4" cy="4" r="1.7" style={fill("var(--surface)")} />}
+        </pattern>
+      ))}
+    </defs>
+  );
+}
+export function useFill() {
+  const on = useContext(PatternContext);
+  return (c) => { const i = SLOTS.indexOf(c); return on && i > 0 ? `url(#pat${i})` : c; };
+}
 const stroke = (c) => ({ stroke: c });
 
 const niceStep = (range, ticks) => {
@@ -117,14 +139,16 @@ export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est, view
 
 // Same idea as SegBar but as horizontal count bars (alternative view of a group split).
 export function CountBars({ parts }) {
+  const F = useFill();
   const W = 600, LBL = 130, R = 60, rowH = 26, H = parts.length * rowH + 4;
   const max = Math.max(...parts.map((p) => p.count), 1);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={parts.map((p) => `${p.name} ${p.count}`).join(", ")}>
+      <PatternDefs />
       {parts.map((p, i) => (
         <g key={p.name}>
           <text x={LBL - 8} y={i * rowH + 15} fontSize="12" textAnchor="end" style={fill("var(--ink2)")}>{p.name}</text>
-          <rect x={LBL} y={i * rowH + 3} width={Math.max((p.count / max) * (W - LBL - R), 1)} height="16" rx="4" style={fill(p.color)}><title>{`${p.name}: ${p.count.toLocaleString()}`}</title></rect>
+          <rect x={LBL} y={i * rowH + 3} width={Math.max((p.count / max) * (W - LBL - R), 1)} height="16" rx="4" style={fill(F(p.color))}><title>{`${p.name}: ${p.count.toLocaleString()}`}</title></rect>
           <text x={LBL + (p.count / max) * (W - LBL - R) + 6} y={i * rowH + 15} fontSize="12" fontWeight="600" style={fill("var(--ink)")}>{p.count.toLocaleString()}</text>
         </g>
       ))}
@@ -134,12 +158,14 @@ export function CountBars({ parts }) {
 
 // One whole split into parts (thin segmented bar).
 export function SegBar({ parts }) {
+  const F = useFill();
   const total = parts.reduce((a, p) => a + p.count, 0), W = 600, g = 2;
   let x = 0;
   return (
     <svg viewBox={`0 0 ${W} 14`} role="img" aria-label={parts.map((p) => `${p.name} ${p.count}`).join(", ")}>
+      <PatternDefs />
       {parts.map((p) => {
-        const w = (p.count / total) * W; const r = <rect key={p.name} x={x} y="0" width={Math.max(w - g, 1)} height="14" rx="7" style={fill(p.color)}><title>{`${p.name}: ${p.count.toLocaleString()} (${((100 * p.count) / total).toFixed(1)}%)`}</title></rect>;
+        const w = (p.count / total) * W; const r = <rect key={p.name} x={x} y="0" width={Math.max(w - g, 1)} height="14" rx="7" style={fill(F(p.color))}><title>{`${p.name}: ${p.count.toLocaleString()} (${((100 * p.count) / total).toFixed(1)}%)`}</title></rect>;
         x += w; return r;
       })}
     </svg>
@@ -148,6 +174,7 @@ export function SegBar({ parts }) {
 
 // ---- 2. Distribution: everyone (top) vs the sample (bottom), same x axis.
 export function DistributionPair({ values, sampled, groupOf, groupNames, colors, trueMean, est, top, binWidth = 2500 }) {
+  const F = useFill();
   const W = 900, L = 12, R = 12, PH = 110, GAP = 34, T = 46, H = T + PH * 2 + GAP + 30, bins = Math.max(1, Math.round(top / binWidth));
   const hi = top, w = hi / bins;
   const x = (v) => L + (v / hi) * (W - L - R);
@@ -163,7 +190,7 @@ export function DistributionPair({ values, sampled, groupOf, groupNames, colors,
     return c;
   };
   const popC = tally(() => true), samC = tally((i) => sampSet.has(i));
-  const colorFor = (g, isSample) => (groupOf ? colors[groups[g]] : isSample ? ACCENT : "var(--pop)");
+  const colorFor = (g, isSample) => (groupOf ? F(colors[groups[g]]) : isSample ? ACCENT : "var(--pop)");
   const panel = (c, y0, isSample, label, nLabel) => {
     const max = Math.max(1, ...c.map((r) => r.reduce((a, b) => a + b, 0)));
     return (
@@ -191,6 +218,7 @@ export function DistributionPair({ values, sampled, groupOf, groupNames, colors,
   const axisY = y2 + PH;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Distribution of charges for everyone and for the sample">
+      <PatternDefs />
       {panel(popC, y1, false, "Everyone", `${values.length.toLocaleString()} people`)}
       {panel(samC, y2, true, "Your sample", `${sampled.length} people`)}
       <RefLines x={x} tx={trueMean} ex={est} y0={y1 - 4} y1={axisY} />
@@ -204,6 +232,7 @@ export function DistributionPair({ values, sampled, groupOf, groupNames, colors,
 
 // ---- 3. Who got sampled? Paired bars per group: population share vs sample share (or the difference).
 export function ShareBars({ rows, mode = "pair" }) {
+  const F = useFill();
   // rows: [{ name, popPct, samPct, color }]
   const W = 860, LBL = 110, R = 80, rowH = mode === "diff" ? 34 : 44, H = rows.length * rowH + 6;
   if (mode === "diff") {
@@ -211,13 +240,14 @@ export function ShareBars({ rows, mode = "pair" }) {
     const mid = LBL + (W - LBL - R) / 2, half = (W - LBL - R) / 2;
     return (
       <svg viewBox={`0 0 ${W} ${H + 18}`} role="img" aria-label="Sample share minus population share for each group, in percentage points">
+        <PatternDefs />
         <line x1={mid} x2={mid} y1="0" y2={H} strokeWidth="1.5" style={stroke("var(--axis)")} />
         {rows.map((r, i) => {
           const d = r.samPct - r.popPct, y = i * rowH + 4, len = (Math.abs(d) / maxAbs) * half;
           return (
             <g key={r.name}>
               <text x={LBL - 10} y={y + 17} fontSize="13" textAnchor="end" fontWeight="600" style={fill("var(--ink)")}>{r.name}</text>
-              <rect x={d >= 0 ? mid : mid - len} y={y + 4} width={Math.max(len, 1)} height="16" rx="4" style={fill(r.color)}><title>{`Sample share − population share: ${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(1)} percentage points`}</title></rect>
+              <rect x={d >= 0 ? mid : mid - len} y={y + 4} width={Math.max(len, 1)} height="16" rx="4" style={fill(F(r.color))}><title>{`Sample share − population share: ${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(1)} percentage points`}</title></rect>
               <text x={d >= 0 ? mid + len + 6 : mid - len - 6} y={y + 17} fontSize="12" fontWeight="600" textAnchor={d >= 0 ? "start" : "end"} style={fill("var(--ink)")}>{d >= 0 ? "+" : "−"}{Math.abs(d).toFixed(1)} pp</text>
             </g>
           );
@@ -230,6 +260,7 @@ export function ShareBars({ rows, mode = "pair" }) {
   const sx = (p) => (p / max) * (W - LBL - R);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Share of people in each group: population versus sample">
+      <PatternDefs />
       {rows.map((r, i) => {
         const y = i * rowH + 4;
         return (
@@ -237,7 +268,7 @@ export function ShareBars({ rows, mode = "pair" }) {
             <text x={LBL - 10} y={y + 20} fontSize="13" textAnchor="end" fontWeight="600" style={fill("var(--ink)")}>{r.name}</text>
             <rect x={LBL} y={y + 2} width={Math.max(sx(r.popPct), 1)} height="14" rx="4" style={fill("var(--pop)")}><title>{`Population: ${r.popPct.toFixed(1)}%`}</title></rect>
             <text x={LBL + sx(r.popPct) + 6} y={y + 13} fontSize="12" style={fill("var(--ink2)")}>{r.popPct.toFixed(1)}%</text>
-            <rect x={LBL} y={y + 20} width={Math.max(sx(r.samPct), 1)} height="14" rx="4" style={fill(r.color)}><title>{`Sample: ${r.samPct.toFixed(1)}%`}</title></rect>
+            <rect x={LBL} y={y + 20} width={Math.max(sx(r.samPct), 1)} height="14" rx="4" style={fill(F(r.color))}><title>{`Sample: ${r.samPct.toFixed(1)}%`}</title></rect>
             <text x={LBL + sx(r.samPct) + 6} y={y + 31} fontSize="12" fontWeight="600" style={fill("var(--ink)")}>{r.samPct.toFixed(1)}%{r.count != null ? ` (${r.count})` : ""}</text>
           </g>
         );
@@ -343,10 +374,12 @@ export function RunningMean({ draws, trueMean }) {
 
 // Charges by group: box plots or mean/median bars. rows: [{ name, n, mean, median, q1, q3, lo, hi, color }]
 export function GroupBoxes({ rows, top, trueMean, mode = "box" }) {
+  const F = useFill();
   const W = 900, LBL = 120, R = 24, T = 26, rowH = 52, H = T + rows.length * rowH + 30;
   const x = (v) => LBL + (v / top) * (W - LBL - R);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={mode === "box" ? "Box plot of charges for each group" : "Mean and median charges for each group"}>
+      <PatternDefs />
       {niceTicks(0, top, 7).map((t) => (
         <g key={t}>
           <line x1={x(t)} x2={x(t)} y1={T - 6} y2={H - 26} strokeWidth="1" style={stroke("var(--grid)")} />
@@ -362,14 +395,14 @@ export function GroupBoxes({ rows, top, trueMean, mode = "box" }) {
             {mode === "box" ? (
               <g>
                 <line x1={x(r.lo)} x2={x(r.hi)} y1={y} y2={y} strokeWidth="1.5" style={stroke("var(--axis)")} />
-                <rect x={x(r.q1)} y={y - 11} width={Math.max(x(r.q3) - x(r.q1), 1)} height="22" rx="3" style={fill(r.color)} opacity="0.35"><title>{`${r.name}: 25th to 75th percentile ${money0(r.q1)} to ${money0(r.q3)}`}</title></rect>
+                <rect x={x(r.q1)} y={y - 11} width={Math.max(x(r.q3) - x(r.q1), 1)} height="22" rx="3" style={fill(F(r.color))} opacity="0.45"><title>{`${r.name}: 25th to 75th percentile ${money0(r.q1)} to ${money0(r.q3)}`}</title></rect>
                 <rect x={x(r.q1)} y={y - 11} width={Math.max(x(r.q3) - x(r.q1), 1)} height="22" rx="3" fill="none" strokeWidth="1.5" style={stroke(r.color)} />
                 <line x1={x(r.median)} x2={x(r.median)} y1={y - 11} y2={y + 11} strokeWidth="3" style={stroke("var(--ink)")}><title>{`Median ${money0(r.median)}`}</title></line>
                 <path d={`M${x(r.mean)} ${y - 7} l6 7 l-6 7 l-6 -7 z`} style={{ ...fill("var(--truec)"), ...stroke("var(--surface)") }} strokeWidth="1"><title>{`Mean ${money0(r.mean)}`}</title></path>
               </g>
             ) : (
               <g>
-                <rect x={LBL} y={y - 11} width={Math.max(x(r.mean) - LBL, 1)} height="22" rx="4" style={fill(r.color)}><title>{`${r.name}: mean ${money0(r.mean)}`}</title></rect>
+                <rect x={LBL} y={y - 11} width={Math.max(x(r.mean) - LBL, 1)} height="22" rx="4" style={fill(F(r.color))}><title>{`${r.name}: mean ${money0(r.mean)}`}</title></rect>
                 <line x1={x(r.median)} x2={x(r.median)} y1={y - 14} y2={y + 14} strokeWidth="3" style={stroke("var(--ink)")}><title>{`Median ${money0(r.median)}`}</title></line>
                 <text x={x(r.mean) + 8} y={y + 4} fontSize="12" fontWeight="600" style={fill("var(--ink)")}>{money0(r.mean)}</text>
               </g>

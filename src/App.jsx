@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
-import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks } from "./extras.jsx";
+import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks, ReproduceCard } from "./extras.jsx";
+import { PatternContext } from "./ctx.js";
+import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
+import { StartHere, Walkthrough, GuideTab } from "./guide.jsx";
 import { DistributionPair, RowBars, SegBar, CountBars, GroupBoxes, ShareBars, SimpleHistogram, StripRow, HistRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
@@ -27,6 +30,8 @@ function PopulationTab() {
   }), [gcol]);
   return (
     <>
+      <StartHere />
+
       <div className="cards">
         <div className="stat c1"><div className="l">people in the file (N)</div><div className="v">{N.toLocaleString()}</div></div>
         <div className="stat c2"><div className="l">true mean of charges</div><div className="v">{money(TRUE_MEAN)}</div></div>
@@ -215,6 +220,22 @@ function ExploreTab() {
   const design = method === "systematic" ? S.systematicDesign(N, nn) : null;
   const idx = sample ? sample.indices : [];
 
+  // Replay: the sampled people appear one by one, with the running mean of the people shown so far.
+  const [replayK, setReplayK] = useState(null);
+  useEffect(() => { setReplayK(null); }, [method, nn, seed, strataCol]);
+  useEffect(() => {
+    if (replayK == null) return undefined;
+    if (replayK >= idx.length) { const t = setTimeout(() => setReplayK(null), 700); return () => clearTimeout(t); }
+    const t = setTimeout(() => setReplayK(replayK + Math.max(1, Math.ceil(idx.length / 80))), 45);
+    return () => clearTimeout(t);
+  }, [replayK, idx.length]);
+  const startReplay = () => {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setReplayK(0);
+  };
+  const shownIdx = replayK == null ? idx : idx.slice(0, replayK);
+  const shownEst = replayK == null ? (sample ? sample.estimate : null) : (replayK ? S.mean(shownIdx.map((i) => population.values[i])) : null);
+
   const shareRows = groupOf && sample ? groupCounts[effCol].map(([g, k]) => {
     const c = idx.filter((i) => groupOf[i] === g).length;
     return { name: g, popPct: (100 * k) / N, samPct: (100 * c) / idx.length, color: colors[g], count: c };
@@ -267,11 +288,12 @@ function ExploreTab() {
               {method === "systematic" && " The file order has no documented meaning (it is not a time sequence), so stepping through it means something different from sampling a chronological record."}</p>
             <div className="opts">
               <Toggle label="View" value={view} onChange={setView} options={[["bars", "Bars, file order"], ["dots", "Dots, file order"], ["sorted", "Sorted by charges"]]} />
+              <button type="button" className="btn ghost" onClick={startReplay} disabled={replayK != null}>{replayK != null ? "Replaying…" : "Replay the selection"}</button>
               {method !== "srs" && <label className="inl"><input type="checkbox" checked={markers} onChange={(e) => setMarkers(e.target.checked)} /> Show selection markers {method === "systematic" ? "(interval ticks and the random start)" : "(colour by stratum)"}</label>}
             </div>
             <div className="chart">
               <SaveBtn name="who-is-in-the-sample" />
-              <RowBars values={population.values} sampled={idx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={sample.estimate} view={view} ticks={markers ? selectionTicks(sample, nn) : null} />
+              <RowBars values={population.values} sampled={shownIdx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={shownEst} view={view} ticks={markers && replayK == null ? selectionTicks(sample, nn) : null} />
               <HowTo>{view === "dots" ? "Each dot is one person, in the order they appear in the file; higher means higher charges." : view === "sorted" ? "Each bar is one person, lined up from the lowest to the highest charges, so you can see where the sample's people fall in the overall spread." : "Each bar is one person, in the order they appear in the file; taller means higher charges."} Coloured marks are the people in this sample. The gold dashed line is the true mean of everyone and the dark line is the mean of this one sample.{view === "bars" && markers && method === "systematic" ? " Small ticks under the axis mark the selected rows and the triangle marks the random start (shown when n is 150 or less)." : ""}</HowTo>
               <div className="legend">
                 <span><span className="sw sq" style={{ background: "var(--pop)" }} />not sampled</span>
@@ -317,6 +339,8 @@ function ExploreTab() {
           <DrawMore method={method} n={nn} seed={seed} strataCol={strataCol} first={sample.estimate} trueMean={TRUE_MEAN} />
 
           <SideBySide methodA={method} n={nn} seed={seed} strataCol={strataCol} sampleA={sample} view={view} markers={markers} />
+
+          <Walkthrough method={method} sample={sample} n={nn} strataCol={strataCol} />
 
           <section className="block">
             <h2>How this sample was chosen</h2>
@@ -470,12 +494,14 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
             <HowTo>Each dot is the estimate from one separate sample. The black tick is the average of all the estimates in that row and the gold dashed line is the true mean. Dots spread far apart mean the estimates vary a lot from sample to sample. The numbers on the right summarise the dots in US dollars.{view === "hist" && " In histogram view, taller bars mean more estimates in that dollar range; bar heights are scaled within each row, so compare shapes and positions, not heights."}{band && " The shaded band covers the middle 90% of the estimates in each row."}</HowTo>
           </div>
           <MeasuresPanel />
+          <ReproduceCard text={`${expName} · seed ${out.seed} · ${out.reps} repetitions${needsStrata ? ` · stratify on ${out.strataCol}` : ""} · baseline population`} />
           <p className="meta">Baseline population · {population.file} · N = {N.toLocaleString()} · seed {out.seed} (exact rows need none) · repetitions {out.reps} for Monte Carlo rows; exact rows list every start (count shown in the row).
             Bias = mean of estimates − true mean; SD = spread of the estimates; RMSE = √(mean of (estimate − true mean)²).</p>
           <p className="note">100 repetitions usually reveal the main pattern; 1,000 give smoother distributions and more stable bias, SD and RMSE. Neither guarantees stable results, and 100 repetitions cannot reliably separate small differences between methods: rerun with different seeds to check. Systematic sampling with a whole-number interval uses exact enumeration, so it ignores the seed and repetitions.</p>
           <div className="actions">
             <button className="btn ghost" onClick={downloadCsv}>Download results (CSV)</button>
             <button className="btn ghost" onClick={copyRows}>{copied ? "Copied" : "Copy rows for the DECISIONS.md table"}</button>
+            <button className="btn ghost" onClick={() => window.print()}>Print / save as PDF</button>
           </div>
           <details><summary>View results as a table</summary>
             <table>
@@ -485,6 +511,10 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
           </details>
         </>
       )}
+      <SeedCheck baseSeed={seed} reps={reps} name={tabKey + "-seed-check"}
+        runSeed={(sd) => conditions.map((c) => S.repeatedResult({ ...c, pop: population, reps, seed: sd, strataCol }))}
+        rowLabel={(r) => (rowLabel === "Method" ? `${METHODS[r.method]} (n = ${r.n})` : `Simple random, n = ${r.n}`)} />
+      {tabKey === "size" && <SampleSizeCurve seed={seed} reps={reps} />}
     </>
   );
 }
@@ -677,6 +707,7 @@ function ChallengeTab() {
             <HowTo>Each row is one condition: a method on the baseline or on the modified copy. Each dot is the estimate from one separate sample, the black tick is the average of the estimates, and the gold dashed line is the true mean of that row's own population. The numbers on the right summarise the dots in US dollars.{view === "hist" && " In histogram view, taller bars mean more estimates in that dollar range; bar heights are scaled within each row, so compare shapes and positions, not heights."}{band && " The shaded band covers the middle 90% of the estimates in each row."}</HowTo>
           </div>
           <MeasuresPanel />
+          <ReproduceCard text={`Challenge · n = ${out.n} · seed ${out.seed} · ${out.reps} repetitions · stratify on ${out.strataCol} · modified copy: top ${out.count} ${out.col} = ${out.value} rows spaced every ${out.k.toFixed(2)} rows`} />
 
           <h3 style={{ marginTop: 18 }}>Ratios and differences (arithmetic from the table above)</h3>
           <table>
@@ -695,9 +726,17 @@ function ChallengeTab() {
           <div className="actions">
             <button className="btn ghost" onClick={downloadCsv}>Download results (CSV)</button>
             <button className="btn ghost" onClick={copyRows}>{copied ? "Copied" : "Copy rows for the DECISIONS.md table"}</button>
+            <button className="btn ghost" onClick={() => window.print()}>Print / save as PDF</button>
           </div>
         </section>
       )}
+      <SeedCheck baseSeed={seed} reps={reps} name="challenge-seed-check" disabled={!built.mod}
+        runSeed={(sd) => {
+          const out2 = [];
+          for (const method of ["systematic", "stratified", "srs"]) for (const [label, pop] of [["baseline", population], ["modified", built.mod]]) out2.push({ label, ...S.repeatedResult({ method, pop, n: nn, reps, seed: sd, strataCol }) });
+          return out2;
+        }}
+        rowLabel={(r) => `${METHODS[r.method]} · ${r.label}`} />
     </>
   );
 }
@@ -732,34 +771,51 @@ function GlossaryTab({ focus }) {
     const el = document.getElementById("g-" + focus);
     if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [focus]);
+  const [q, setQ] = useState("");
   return (
     <section className="block">
       <h2>Glossary</h2>
       <p className="sub">Click a <b>?</b> next to a term anywhere in the app to jump to its definition here.</p>
-      <dl className="gloss">{terms.map(([t, d], i) => <React.Fragment key={t}><dt id={"g-" + ids[i]} className={focus === ids[i] ? "hl" : ""}>{t}</dt><dd>{d}</dd></React.Fragment>)}</dl>
+      <div className="toolbar" style={{ marginBottom: 12 }}>
+        <label>Search the glossary
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. bias, stratum, seed" />
+        </label>
+      </div>
+      <dl className="gloss">{terms.map(([t, d], i) => ({ t, d, i })).filter((x) => !q || (x.t + " " + x.d).toLowerCase().includes(q.toLowerCase())).map(({ t, d, i }) => <React.Fragment key={t}><dt id={"g-" + ids[i]} className={focus === ids[i] ? "hl" : ""}>{t}</dt><dd>{d}</dd></React.Fragment>)}</dl>
+      {q && !terms.some(([t, d]) => (t + " " + d).toLowerCase().includes(q.toLowerCase())) && <p className="note">No glossary entry matches “{q}”.</p>}
       <MeasuresPanel />
     </section>
   );
 }
 
 // ------------------------------------------------------------------ Shell
-const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["challenge", "Challenge"], ["gloss", "Glossary"]];
+const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["challenge", "Challenge"], ["guide", "Methods guide"], ["gloss", "Glossary"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === hashTab()) ? hashTab() : "pop");
   const [focus, setFocus] = useState(null);
+  const [theme, setTheme] = useState(() => { try { return localStorage.getItem("jts-theme") === "dark" ? "dark" : "light"; } catch { return "light"; } });
+  const [patterns, setPatterns] = useState(() => { try { return localStorage.getItem("jts-patterns") === "1"; } catch { return false; } });
+  useEffect(() => { document.documentElement.dataset.theme = theme; try { localStorage.setItem("jts-theme", theme); } catch { /* storage unavailable */ } }, [theme]);
+  useEffect(() => { try { localStorage.setItem("jts-patterns", patterns ? "1" : "0"); } catch { /* storage unavailable */ } }, [patterns]);
   const go = (k) => { setFocus(null); setTab(k); history.replaceState(null, "", "#" + k); };
   const openGlossary = (term) => { setFocus(term); setTab("gloss"); history.replaceState(null, "", "#gloss"); };
+  const goTab = (k) => { go(k); window.scrollTo({ top: 0 }); };
   useEffect(() => {
     const onHash = () => { const t = hashTab(); if (TABS.some(([k]) => k === t)) setTab((cur) => (cur === t ? cur : t)); };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
   return (
-    <NavContext.Provider value={{ openGlossary }}>
+    <NavContext.Provider value={{ openGlossary, goTab }}>
+      <PatternContext.Provider value={patterns}>
       <div className="wrap">
         <a className="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById("main")?.focus(); }}>Skip to content</a>
         <header className="banner">
+          <div className="bn-tools">
+            <button type="button" aria-pressed={theme === "dark"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? "Light mode" : "Dark mode"}</button>
+            <button type="button" aria-pressed={patterns} onClick={() => setPatterns(!patterns)} title="Adds textures to coloured group bars, so groups never depend on colour alone">{patterns ? "Patterns: on" : "Patterns: off"}</button>
+          </div>
           <div className="bn-text">
             <div className="eyebrow">Sampling activity · Healthcare costs · N = 1,338</div>
             <h1>Judge the Sample</h1>
@@ -772,6 +828,7 @@ export default function App() {
         <main id="main" tabIndex={-1} style={{ outline: "none" }}>
           {tab === "pop" && <PopulationTab />}
           {tab === "challenge" && <ChallengeTab />}
+          {tab === "guide" && <GuideTab />}
           {tab === "gloss" && <GlossaryTab focus={focus} />}
           {tab === "explore" && <ExploreTab />}
           {tab === "methods" && <ExperimentTab key="m" tabKey="methods" rowLabel="Method" expName="Methods at n = 100" title="Experiment A: three methods at n = 100" intro="Simple random, systematic and stratified sampling on the baseline population, each with the same total n = 100 and the same seed." conditions={[{ method: "srs", n: 100 }, { method: "systematic", n: 100 }, { method: "stratified", n: 100 }]} />}
@@ -779,6 +836,7 @@ export default function App() {
         </main>
         <SiteFooter nPeople={N} />
       </div>
+      </PatternContext.Provider>
     </NavContext.Provider>
   );
 }

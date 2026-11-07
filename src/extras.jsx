@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { NavContext } from "./ctx.js";
 import { population } from "./data.js";
 import * as S from "./sampling.js";
 import { RowBars, StripRow, RunningMean, BiasSpreadDiagram, ACCENT, money, money0, signed } from "./charts.jsx";
@@ -8,7 +9,7 @@ const METHOD_NAMES = { srs: "Simple random", systematic: "Systematic", stratifie
 const METHOD_ORDER = ["srs", "systematic", "stratified"];
 
 // ---------------------------------------------------------------- navigation + hover help
-export const NavContext = createContext({ openGlossary: () => {} });
+export { NavContext };
 
 const DEFS = {
   "true-mean": ["True mean", "The average of charges over every one of the 1,338 rows. Because the whole file is the population, it is known exactly."],
@@ -376,5 +377,16 @@ export function SiteFooter({ nPeople }) {
         <button type="button" className="linkbtn" onClick={() => window.print()}>Print this page</button>
       </p>
     </footer>
+  );
+}
+
+// ---------------------------------------------------------------- how to reproduce a result
+export function ReproduceCard({ text }) {
+  const [ok, setOk] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); setOk(true); setTimeout(() => setOk(false), 2000); } catch { /* clipboard unavailable */ }
+  };
+  return (
+    <p className="meta"><b>To reproduce this result:</b> {text} · <button type="button" className="linkbtn" onClick={copy}>{ok ? "Copied" : "Copy these settings as text"}</button></p>
   );
 }

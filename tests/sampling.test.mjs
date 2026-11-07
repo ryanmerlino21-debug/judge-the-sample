@@ -168,3 +168,18 @@ test("summarize: bias, SD and RMSE match a hand calculation (estimates 1,2,3,4; 
   assert.ok(Math.abs(r.rmse - Math.sqrt(1.5)) < 1e-12);       // sqrt((1 + 0 + 1 + 4) / 4)
   assert.ok(Math.abs(r.rmse ** 2 - (r.bias ** 2 + r.sd ** 2)) < 1e-12);
 });
+
+test("seedList: first seed is the base, all seeds distinct, reproducible", () => {
+  const a = S.seedList(2026, 10), b = S.seedList(2026, 10);
+  assert.equal(a[0], 2026);
+  assert.equal(new Set(a).size, 10);
+  assert.deepEqual(a, b);
+  assert.ok(a.every((x) => Number.isInteger(x) && x >= 0));
+});
+
+test("quantile: known percentiles (used for the shaded middle-90% band)", () => {
+  const xs = Array.from({ length: 101 }, (_, i) => i);   // 0..100
+  assert.equal(S.quantile(xs, 0.05), 5);
+  assert.equal(S.quantile(xs, 0.95), 95);
+  assert.equal(S.quantile(xs, 0.5), 50);
+});

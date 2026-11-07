@@ -265,3 +265,7 @@ export function spaceRows(pop, { col, value, count, interval }) {
     order,
   };
 }
+
+// ---------- seeds for a multi-seed check ----------
+// The first seed is the one the user is already using; the others are derived from it deterministically.
+export const seedList = (base, count) => Array.from({ length: count }, (_, j) => (base + 7919 * j) >>> 0);
