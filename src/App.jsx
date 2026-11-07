@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
-import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks, ReproduceCard, EstimateRuler, SampledPeople } from "./extras.jsx";
-import { getResult, setResult } from "./store.js";
+import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks, ReproduceCard, EstimateRuler, SampledPeople, Representativeness } from "./extras.jsx";
+import { getResult, setResult, useResults } from "./store.js";
+import { DataChecks } from "./integrity.jsx";
 import { ResultsTab } from "./results.jsx";
 import { PatternContext } from "./ctx.js";
 import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
@@ -173,6 +174,8 @@ function PopulationTab() {
           <li>Calling the cost teaching data real patient records.</li>
         </ul>
       </div>
+
+      <DataChecks />
 
       <LimitsPanel />
 
@@ -380,6 +383,7 @@ function ExploreTab() {
                 {design.whole ? <>Random start r in 1..{design.k}: rows r, r+{design.k}, r+{2 * design.k}, … (start used: {sample.start}).</> : <>Start u uniform in (0, k]; rows ⌈u + j·k⌉ for j = 0..{nn - 1} (start used: {sample.start.toFixed(3)}).</>}</p>
             )}
             <SampledPeople indices={idx} />
+            <Representativeness indices={idx} />
             <details open={idx.length <= 30}>
               <summary>Selected row numbers ({idx.length}, in file order)</summary>
               <p className="small" style={{ fontFamily: "ui-monospace, Menlo, monospace", lineHeight: 1.9, wordBreak: "break-word" }}>{idx.map((i) => i + 1).join(", ")}</p>
@@ -838,6 +842,9 @@ export default function App() {
   const go = (k) => { setFocus(null); setTab(k); history.replaceState(null, "", "#" + k); };
   const openGlossary = (term) => { setFocus(term); setTab("gloss"); history.replaceState(null, "", "#gloss"); };
   const goTab = (k) => { go(k); window.scrollTo({ top: 0 }); };
+  const results = useResults();
+  const [big, setBig] = useState(() => { try { return localStorage.getItem("jts-text") === "large"; } catch { return false; } });
+  useEffect(() => { document.documentElement.dataset.text = big ? "large" : "standard"; try { localStorage.setItem("jts-text", big ? "large" : "standard"); } catch { /* storage unavailable */ } }, [big]);
   useEffect(() => {
     const onHash = () => { const t = hashTab(); if (TABS.some(([k]) => k === t)) setTab((cur) => (cur === t ? cur : t)); };
     window.addEventListener("hashchange", onHash);
@@ -851,6 +858,7 @@ export default function App() {
         <header className="banner">
           <div className="bn-tools">
             <button type="button" aria-pressed={theme === "dark"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? "Light mode" : "Dark mode"}</button>
+            <button type="button" aria-pressed={big} onClick={() => setBig(!big)}>{big ? "Text: larger" : "Text: standard"}</button>
             <button type="button" aria-pressed={patterns} onClick={() => setPatterns(!patterns)} title="Adds textures to coloured group bars, so groups never depend on colour alone">{patterns ? "Patterns: on" : "Patterns: off"}</button>
           </div>
           <div className="bn-text">
@@ -860,7 +868,7 @@ export default function App() {
           </div>
         </header>
         <nav className="tabs" role="tablist" aria-label="Sections">
-          {TABS.map(([k, label]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => go(k)}>{label}</button>)}
+          {TABS.map(([k, label]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => go(k)}>{label}{results[k] ? <span className="done" aria-label=" (results available)"> ✓</span> : null}</button>)}
         </nav>
         <main id="main" tabIndex={-1} style={{ outline: "none" }}>
           {tab === "pop" && <PopulationTab />}
@@ -871,6 +879,10 @@ export default function App() {
           {tab === "explore" && <ExploreTab />}
           {tab === "methods" && <ExperimentTab key="m" tabKey="methods" rowLabel="Method" expName="Methods at n = 100" title="Experiment A: three methods at n = 100" intro="Simple random, systematic and stratified sampling on the baseline population, each with the same total n = 100 and the same seed." conditions={[{ method: "srs", n: 100 }, { method: "systematic", n: 100 }, { method: "stratified", n: 100 }]} />}
           {tab === "size" && <ExperimentTab key="s" tabKey="size" rowLabel="Sample size" expName="Sample size" title="Experiment B: simple random sampling at n = 1, 10 and 100" intro="Same population and method; only the sample size changes. With the same seed and repetitions, the n = 100 result matches the simple random result in Experiment A." conditions={[{ method: "srs", n: 1 }, { method: "srs", n: 10 }, { method: "srs", n: 100 }]} />}
+          <div className="pager">
+            {TABS.findIndex(([k]) => k === tab) > 0 ? <button type="button" className="btn ghost" onClick={() => goTab(TABS[TABS.findIndex(([k]) => k === tab) - 1][0])}>← {TABS[TABS.findIndex(([k]) => k === tab) - 1][1]}</button> : <span />}
+            {TABS.findIndex(([k]) => k === tab) < TABS.length - 1 ? <button type="button" className="btn ghost" onClick={() => goTab(TABS[TABS.findIndex(([k]) => k === tab) + 1][0])}>{TABS[TABS.findIndex(([k]) => k === tab) + 1][1]} →</button> : <span />}
+          </div>
         </main>
         <SiteFooter nPeople={N} />
       </div>

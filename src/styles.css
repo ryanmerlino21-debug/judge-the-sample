@@ -201,3 +201,12 @@ input[type=search] { padding: 7px 9px; border: 1px solid var(--axis); border-rad
 :root[data-theme="dark"] .callout { background: #2a2414; } :root[data-theme="dark"] .tag.gold { background: #3a301a; color: #e9d7a1; } :root[data-theme="dark"] .gloss dt.hl { background: #3a301a; box-shadow: 0 0 0 6px #3a301a; }
 :root[data-theme="dark"] .stat { border-top-color: var(--border); } :root[data-theme="dark"] .banner { background: linear-gradient(115deg, #0b2036 0%, #123a5e 60%, #17507c 100%); }
 :root[data-theme="dark"] .savebtn, :root[data-theme="dark"] button.help { background: var(--surface); color: var(--ink2); }
+
+/* ---- round A: pager, tab marks, larger text ---- */
+.pager { display: flex; justify-content: space-between; gap: 12px; margin: 34px 0 6px; padding-top: 16px; border-top: 1px solid var(--grid); }
+nav.tabs .done { color: var(--s3); font-weight: 700; }
+:root[data-text="large"] body { font-size: 17.5px; } :root[data-text="large"] .small, :root[data-text="large"] .howto, :root[data-text="large"] .meta, :root[data-text="large"] .note { font-size: 15px; }
+:root[data-text="large"] h2 { font-size: 25px; } :root[data-text="large"] table { font-size: 16px; } :root[data-text="large"] .toolbar label { font-size: 14px; }
+@media print { .pager, .bn-tools { display: none !important; } }
+.chart > svg:first-of-type { margin-top: 18px; }
+.chart.groups > svg:first-of-type { margin-top: 0; }

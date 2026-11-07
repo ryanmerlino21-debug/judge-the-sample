@@ -1,6 +1,8 @@
 import csv from "../data/healthcare_costs.csv?raw";
 
 // Parse the supplied CSV (no quoted fields). `data/` is never modified.
+export const RAW_CSV = csv;
+export const HEADER_COLUMNS = csv.split(/\r?\n/)[0].split(",");
 const [header, ...lines] = csv.trim().split(/\r?\n/);
 const cols = header.split(",");
 const rows = lines.map((l) => l.split(","));

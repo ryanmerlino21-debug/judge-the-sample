@@ -173,6 +173,7 @@ export function GuideTab() {
         <MeasuresPanel />
       </section>
       <SelfChecks />
+      <CitePanel />
     </>
   );
 }
@@ -235,6 +236,23 @@ export function SelfChecks() {
           <tbody>{res.map((c) => <tr key={c.name}><td><b style={{ color: c.pass ? "var(--s3)" : "#b3261e" }}>{c.pass ? "✓ Pass" : "✗ Fail"}</b></td><td>{c.name}{c.note ? <span className="small muted"> ({c.note})</span> : null}</td></tr>)}</tbody>
         </table>
       )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------- how to cite
+export function CitePanel() {
+  const [ok, setOk] = useState(false);
+  const data = "Lantz, B. Machine Learning with R. Packt Publishing. insurance.csv teaching dataset, as mirrored at https://github.com/stedy/Machine-Learning-with-R-datasets (healthcare_costs.csv adds row_id and age_band).";
+  const app = "Judge the Sample: healthcare costs. Interactive sampling app. https://ryanmerlino21-debug.github.io/judge-the-sample/ (source: https://github.com/ryanmerlino21-debug/judge-the-sample).";
+  const copy = async (t) => { try { await navigator.clipboard.writeText(t); setOk(true); setTimeout(() => setOk(false), 2000); } catch { /* clipboard unavailable */ } };
+  return (
+    <section className="block">
+      <h2>About the data and how to cite</h2>
+      <p className="sub">The data is a public teaching dataset that its author describes as simulated, so cite it as teaching data, not as real patient records.</p>
+      <p><b>Data.</b> {data} <button type="button" className="linkbtn" onClick={() => copy(data)}>{ok ? "Copied" : "Copy"}</button></p>
+      <p><b>This app.</b> {app} <button type="button" className="linkbtn" onClick={() => copy(app)}>{ok ? "Copied" : "Copy"}</button></p>
+      <p className="small muted">No licence is stated in the source repository, so check that your use fits your course policy.</p>
     </section>
   );
 }

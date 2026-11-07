@@ -465,3 +465,30 @@ export function SampledPeople({ indices }) {
     </details>
   );
 }
+
+// ---------------------------------------------------------------- sample versus population on every column
+export function Representativeness({ indices }) {
+  const n = indices.length;
+  const numeric = [["age (years)", population.ages], ["bmi", population.bmi], ["children", population.children]];
+  const mean = (arr, idx) => idx.reduce((t, i) => t + arr[i], 0) / idx.length;
+  const all = population.values.map((_, i) => i);
+  const cols = ["age_band", "region", "smoker", "sex"];
+  return (
+    <details>
+      <summary>Compare this sample with the population on every column</summary>
+      <p className="small muted">Descriptive only: how the {n} sampled people compare with all {N.toLocaleString()} people on each column, not just the one you coloured by.</p>
+      <div style={{ overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Column</th><th className="num">Population</th><th className="num">This sample</th><th className="num">Difference</th></tr></thead>
+          <tbody>
+            {numeric.map(([label, arr]) => { const a = mean(arr, all), b = mean(arr, indices); return <tr key={label}><td>mean {label}</td><td className="num">{a.toFixed(2)}</td><td className="num">{b.toFixed(2)}</td><td className="num">{b - a >= 0 ? "+" : "−"}{Math.abs(b - a).toFixed(2)}</td></tr>; })}
+            {cols.flatMap((c) => S.strataOf(population.groups[c]).sort((x, y) => String(x.name).localeCompare(String(y.name), undefined, { numeric: true })).map((g) => {
+              const pa = (100 * g.size) / N, k = indices.filter((i) => population.groups[c][i] === g.name).length, pb = (100 * k) / n;
+              return <tr key={c + g.name}><td>share of <code>{c}</code> = {g.name}</td><td className="num">{pa.toFixed(1)}%</td><td className="num">{pb.toFixed(1)}% ({k})</td><td className="num">{pb - pa >= 0 ? "+" : "−"}{Math.abs(pb - pa).toFixed(1)} pp</td></tr>;
+            }))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}
