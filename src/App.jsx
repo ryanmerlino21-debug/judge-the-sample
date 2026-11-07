@@ -6,6 +6,7 @@ import { getResult, setResult, useResults } from "./store.js";
 import { DataChecks } from "./integrity.jsx";
 import { PreviousRun, ShapeTable, ChallengeSummary } from "./compare.jsx";
 import { Tour } from "./tour.jsx";
+import { TabIcon, DisplayMenu, PageNav, BackToTop, TabIntro } from "./shell.jsx";
 import { ResultsTab } from "./results.jsx";
 import { PatternContext } from "./ctx.js";
 import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
@@ -836,7 +837,7 @@ function GlossaryTab({ focus }) {
 }
 
 // ------------------------------------------------------------------ Shell
-const TABS = [["pop", "The population"], ["explore", "Explore a sample"], ["methods", "Compare methods"], ["size", "Sample size"], ["challenge", "Challenge"], ["results", "Your results"], ["guide", "Methods guide"], ["gloss", "Glossary"]];
+const TABS = [["pop", "Population"], ["explore", "Explore"], ["methods", "Compare methods"], ["size", "Sample size"], ["challenge", "Challenge"], ["results", "Results"], ["guide", "Guide"], ["gloss", "Glossary"]];
 
 export default function App() {
   const [tab, setTab] = useState(TABS.some(([k]) => k === hashTab()) ? hashTab() : "pop");
@@ -880,12 +881,7 @@ export default function App() {
       <div className="wrap">
         <a className="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById("main")?.focus(); }}>Skip to content</a>
         <header className="banner">
-          <div className="bn-tools">
-            <button type="button" aria-pressed={theme === "dark"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? "Light mode" : "Dark mode"}</button>
-            <button type="button" onClick={() => setTourOpen(true)}>Take a tour</button>
-            <button type="button" aria-pressed={big} onClick={() => setBig(!big)}>{big ? "Text: larger" : "Text: standard"}</button>
-            <button type="button" aria-pressed={patterns} onClick={() => setPatterns(!patterns)} title="Adds textures to coloured group bars, so groups never depend on colour alone">{patterns ? "Patterns: on" : "Patterns: off"}</button>
-          </div>
+          <div className="bn-tools"><DisplayMenu theme={theme} setTheme={setTheme} big={big} setBig={setBig} patterns={patterns} setPatterns={setPatterns} onTour={() => setTourOpen(true)} /></div>
           <div className="bn-text">
             <div className="eyebrow">Sampling activity · Healthcare costs · N = 1,338</div>
             <h1>Judge the Sample</h1>
@@ -893,9 +889,11 @@ export default function App() {
           </div>
         </header>
         <nav className="tabs" role="tablist" aria-label="Sections">
-          {TABS.map(([k, label]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => go(k)}>{label}{results[k] ? <span className="done" aria-label=" (results available)"> ✓</span> : null}</button>)}
+          {TABS.map(([k, label]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => go(k)}><TabIcon name={k} /><span>{label}</span>{results[k] ? <span className="done" aria-label=" (results available)">✓</span> : null}</button>)}
         </nav>
-        <main id="main" tabIndex={-1} style={{ outline: "none" }}>
+        <PageNav tab={tab} />
+        <main id="main" tabIndex={-1} style={{ outline: "none" }} key={tab} className="fadein">
+          <TabIntro tab={tab} icon={<TabIcon name={tab} />} />
           {tab === "pop" && <PopulationTab />}
           {tab === "challenge" && <ChallengeTab />}
           {tab === "results" && <ResultsTab />}
@@ -911,6 +909,7 @@ export default function App() {
         </main>
         <SiteFooter nPeople={N} />
         <Tour open={tourOpen} onClose={() => setTourOpen(false)} />
+        <BackToTop />
       </div>
       </PatternContext.Provider>
     </NavContext.Provider>
