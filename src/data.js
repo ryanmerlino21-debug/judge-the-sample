@@ -15,5 +15,7 @@ export const population = {
   values: col(TARGET).map(Number),
   rowIds: col("row_id").map(Number),
   ages: col("age").map(Number),
+  bmi: col("bmi").map(Number),
+  children: col("children").map(Number),
   groups: Object.fromEntries(GROUP_COLUMNS.map((c) => [c, col(c)])),
 };
