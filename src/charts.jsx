@@ -1,5 +1,6 @@
 import React, { useContext, useState } from "react";
 import { PatternContext } from "./ctx.js";
+import { pickBucket } from "./sampling.js";
 
 export const money = (x, d = 2) => (x < 0 ? "-$" : "$") + Math.abs(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 export const money0 = (x) => money(x, 0);
@@ -547,17 +548,25 @@ export function ScatterByColumn({ xs, ys, groups, colors, xLabel, top }) {
   );
 }
 
-// How often each person was picked across several draws (one square per person, in file order).
-export function FrequencyGrid({ counts, draws }) {
+// How often each person was picked across several draws, in three clearly different groups:
+// never picked / picked no more often than expected / picked more often than expected.
+// "Expected" is draws x n / N, the average number of times each person is picked.
+export const PICK_COLORS = ["var(--muted)", "var(--accent)", "var(--s2)"];
+export function FrequencyGrid({ counts, draws, perDraw }) {
+  const F = useFill();
   const n = counts.length, cols = 62, rows = Math.ceil(n / cols), W = 900, gap = 2.5, cell = (W - gap * (cols - 1)) / cols, H = rows * (cell + gap) - gap;
-  const max = Math.max(...counts, 1);
+  const label = ["never picked", "picked no more than expected", "picked more than expected"];
   return (
-    <svg viewBox={`0 0 ${W} ${H + 22}`} role="img" aria-label={`How often each of ${n} people was picked across ${draws} draws`}>
-      {counts.map((c, i) => (
-        <rect key={i} x={(i % cols) * (cell + gap)} y={Math.floor(i / cols) * (cell + gap)} width={cell} height={cell} rx="3" style={fill(c ? ACCENT : "var(--pop)")} opacity={c ? 0.2 + 0.8 * (c / max) : 0.35}>
-          <title>{`Row ${i + 1}: picked in ${c} of ${draws} draws`}</title>
-        </rect>
-      ))}
+    <svg viewBox={`0 0 ${W} ${H + 22}`} role="img" aria-label={`How often each of ${n} people was picked across ${draws} draws, in three groups: never picked, picked no more than expected, picked more than expected`}>
+      <PatternDefs />
+      {counts.map((c, i) => {
+        const bk = pickBucket(c, draws, perDraw, n);
+        return (
+          <rect key={i} x={(i % cols) * (cell + gap)} y={Math.floor(i / cols) * (cell + gap)} width={cell} height={cell} rx="3" style={fill(F(PICK_COLORS[bk]))} opacity={bk === 0 ? 0.85 : 1}>
+            <title>{`Row ${i + 1}: picked in ${c} of ${draws} draws (${label[bk]})`}</title>
+          </rect>
+        );
+      })}
       <text x="0" y={H + 16} fontSize="11" style={fill("var(--muted)")}>row 1</text>
       <text x={W / 2} y={H + 16} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>read left to right, top to bottom, in file order →</text>
       <text x={W} y={H + 16} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {n.toLocaleString()}</text>

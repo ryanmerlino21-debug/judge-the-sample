@@ -214,3 +214,13 @@ test("shapeOf: percentiles and skewness on known data", () => {
   assert.ok(S.shapeOf([1, 1, 1, 1, 1, 1, 1, 1, 1, 50]).skew > 1);   // long right tail
   assert.equal(S.shapeOf([5, 5, 5]).skew, 0);                // no spread: defined as 0, not NaN
 });
+
+test("pickBucket: three groups relative to the expected number of picks (draws x n / N)", () => {
+  // N = 1338, n = 100, 101 draws -> expected 7.55 -> rounded up to 8
+  assert.equal(S.pickBucket(0, 101, 100, 1338), 0);
+  assert.equal(S.pickBucket(1, 101, 100, 1338), 1);
+  assert.equal(S.pickBucket(8, 101, 100, 1338), 1);     // exactly the rounded-up expectation
+  assert.equal(S.pickBucket(9, 101, 100, 1338), 2);     // more than expected
+  assert.equal(S.pickBucket(1, 1, 100, 1338), 1);       // one draw: expected 0.07 -> 1; everyone picked once is "no more than expected"
+  assert.equal(S.pickBucket(2, 1, 100, 1338), 2);
+});

@@ -277,3 +277,11 @@ export function shapeOf(estimates) {
   const skew = sd > 0 ? mean(estimates.map((x) => ((x - m) / sd) ** 3)) : 0;
   return { min: sorted[0], p5: quantile(sorted, 0.05), q1: quantile(sorted, 0.25), median: quantile(sorted, 0.5), q3: quantile(sorted, 0.75), p95: quantile(sorted, 0.95), max: sorted[sorted.length - 1], skew };
 }
+
+// ---------- how often a person was picked across repeated draws ----------
+// 0 = never picked; 1 = picked, but no more often than expected; 2 = picked more often than expected.
+// "Expected" is draws x n / N (the average number of times each person is picked), rounded up.
+export function pickBucket(count, draws, perDraw, N) {
+  if (count === 0) return 0;
+  return count <= Math.ceil((draws * perDraw) / N) ? 1 : 2;
+}

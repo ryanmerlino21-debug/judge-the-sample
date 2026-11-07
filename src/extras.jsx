@@ -3,7 +3,7 @@ import { notify } from "./ctx.js";
 import { NavContext } from "./ctx.js";
 import { population } from "./data.js";
 import * as S from "./sampling.js";
-import { RowBars, StripRow, RunningMean, BiasSpreadDiagram, FrequencyGrid, HistRow, ACCENT, money, money0, signed } from "./charts.jsx";
+import { RowBars, StripRow, RunningMean, BiasSpreadDiagram, FrequencyGrid, HistRow, PICK_COLORS, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
 const METHOD_NAMES = { srs: "Simple random", systematic: "Systematic", stratified: "Stratified" };
@@ -170,6 +170,7 @@ const domainOf = (xs, tm) => {
   return [Math.max(0, lo - pad), hi + pad];
 };
 
+const counts0 = (drawn) => { const c = new Array(N).fill(0); drawn.forEach((d) => d.idx.forEach((i) => { c[i]++; })); return c; };
 export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean }) {
   const [extra, setExtra] = useState(0);
   const [view, setView] = useState("dots");
@@ -185,6 +186,7 @@ export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean
     return out;
   }, [method, n, seed, strataCol, extra, first, firstIdx]);
   const draws = useMemo(() => drawn.map((d) => d.est), [drawn]);
+  const buckets = useMemo(() => { const b = [0, 0, 0]; counts0(drawn).forEach((c) => { b[S.pickBucket(c, drawn.length, n, N)]++; }); return b; }, [drawn, n]);
   const counts = useMemo(() => {
     const c = new Array(N).fill(0);
     drawn.forEach((d) => d.idx.forEach((i) => { c[i]++; }));
@@ -215,14 +217,14 @@ export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean
         ) : view === "running" ? (
           <RunningMean draws={draws} trueMean={trueMean} />
         ) : (
-          <FrequencyGrid counts={counts} draws={draws.length} />
+          <FrequencyGrid counts={counts} draws={draws.length} perDraw={n} />
         )}
         <div className="legend">
           {view === "picked" ? (
             <>
-              <span><span className="sw sq" style={{ background: "var(--pop)", opacity: 0.4 }} />never picked so far</span>
-              <span><span className="sw sq" style={{ background: ACCENT, opacity: 0.35 }} />picked in a few draws</span>
-              <span><span className="sw sq" style={{ background: ACCENT }} />picked in the most draws</span>
+              {[0, 1, 2].map((bk) => (
+                <span key={bk}><span className="sw sq" style={{ background: PICK_COLORS[bk], opacity: bk === 0 ? 0.85 : 1 }} />{["never picked", "picked, but no more than expected", "picked more than expected"][bk]} · <b>{buckets[bk].toLocaleString()}</b> {buckets[bk] === 1 ? "person" : "people"}</span>
+              ))}
             </>
           ) : view === "dots" || view === "hist" ? (
             <>
@@ -240,7 +242,7 @@ export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean
           ? <>Each dot is the estimate from one separate sample of {n} {n === 1 ? "person" : "people"}. The black tick is the average of the dots so far and the gold dashed line is the true mean of everyone. Dots far apart mean the estimates vary a lot from sample to sample.</>
           : view === "running"
           ? <>The line shows the average of all the estimates drawn so far, after each new draw. The gold dashed line is the true mean of everyone. Early on the line moves a lot because it rests on few draws.</>
-          : <>Each square is one person, in file order. A darker square means that person was picked in more of the {draws.length} {draws.length === 1 ? "draw" : "draws"} so far; a grey square was never picked. With few draws the pattern is mostly chance, and every draw picks {n} {n === 1 ? "person" : "people"}.</>}</HowTo>
+          : <>Each square is one person, in file order, in one of three colours. Grey: never picked in the {draws.length} {draws.length === 1 ? "draw" : "draws"} so far. Blue: picked, but no more often than expected. Orange: picked more often than expected. Expected is the average number of times a person is picked: {draws.length} × {n} ÷ {N.toLocaleString()} = {((draws.length * n) / N).toFixed(2)}, rounded up. With few draws the pattern is mostly chance, and every draw picks {n} {n === 1 ? "person" : "people"}.</>}</HowTo>
         <p className="meta">
           <b>{draws.length}</b> {draws.length === 1 ? "sample" : "samples"} drawn · {METHOD_NAMES[method]}{method === "stratified" ? ` on ${strataCol}` : ""} · n = {n} · seed {seed} (draw 1 uses this seed; later draws use seeds derived from it, so the same clicks give the same dots)
           {draws.length > 1 && <> · mean of the estimates {money(m)} · SD of the estimates {money(sd)} · range {money0(Math.min(...draws))} to {money0(Math.max(...draws))}</>}
