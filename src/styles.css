@@ -296,3 +296,15 @@ nav.tabs button { padding: 13px 10px 11px; gap: 6px; }
 .pagenav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-bottom: 16px; }
 .pagenav::-webkit-scrollbar { display: none; } .pagenav a, .pagenav .pn-label { flex: none; white-space: nowrap; }
 @media (max-width: 760px) { .toolbar { align-items: flex-start; } }
+
+/* ---- round 2: sticky status strip, heat map ---- */
+.status { position: sticky; top: 49px; z-index: 6; display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; background: #0e2a43; color: #e8eef4; border-radius: 8px; padding: 8px 16px; margin: 0 0 18px; font-size: 13px; box-shadow: 0 8px 22px -10px rgba(14,42,67,.7); }
+.status b { color: #fff; } .status .st-sp { margin-left: auto; } .status .pos, .status .neg { font-weight: 700; background: rgba(255,255,255,.14); border-radius: 99px; padding: 1px 10px; }
+:root[data-theme="dark"] .status { background: #1c3a57; }
+table.heat { border-collapse: separate; border-spacing: 4px; } table.heat th, table.heat td { border: 0; }
+table.heat td { text-align: center; border-radius: 6px; min-width: 110px; padding: 10px 8px; } table.heat td b { display: block; font-size: 16px; } table.heat td small { font-size: 11px; opacity: .85; }
+table.heat th { font-size: 12.5px; color: var(--ink); text-transform: none; letter-spacing: 0; }
+@media (max-width: 760px) { .status { top: 46px; font-size: 12px; padding: 6px 12px; } .status .st-sp { margin-left: 0; } }
+@media print { .status { display: none !important; } }
+main section.block { margin-top: 34px; } main > .tabintro + section.block, main > .tabintro + details + .cards { margin-top: 0; }
+main > details, main > .callout { margin-bottom: 8px; }

@@ -7,11 +7,13 @@ import { DataChecks } from "./integrity.jsx";
 import { PreviousRun, ShapeTable, ChallengeSummary } from "./compare.jsx";
 import { Tour } from "./tour.jsx";
 import { TabIcon, DisplayMenu, PageNav, BackToTop, TabIntro } from "./shell.jsx";
+import { ResultSummary, StabilityCard } from "./resultviz.jsx";
+import { HeatMap } from "./heat.jsx";
 import { ResultsTab } from "./results.jsx";
 import { PatternContext } from "./ctx.js";
 import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
 import { StartHere, Walkthrough, GuideTab } from "./guide.jsx";
-import { DistributionPair, RowBars, SegBar, CountBars, GroupBoxes, ShareBars, SimpleHistogram, StripRow, HistRow, ScatterByColumn, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
+import { DistributionPair, CdfPair, RowBars, SegBar, CountBars, GroupBoxes, ShareBars, SimpleHistogram, StripRow, HistRow, ScatterByColumn, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
 const TRUE_MEAN = S.trueMean(population.values);
@@ -93,6 +95,8 @@ function PopulationTab() {
         <div className="chart"><SaveBtn name="charges-histogram" /><SimpleHistogram values={population.values} trueMean={TRUE_MEAN} top={TOP} binWidth={binW} median={showMedian ? POP_STATS.median : null} logScale={logScale} />
           <HowTo>{logScale ? "Each step to the right multiplies the charge instead of adding to it, which spreads out the many small charges so the whole shape is visible. " : ""}Each bar counts the people whose charges fall in that dollar range, so taller bars mean more people. The dashed gold line is the true mean of everyone{showMedian ? "; the dark line is the median, the charge that splits the people in half" : ""}.</HowTo></div>
       </section>
+
+      <HeatMap />
 
       <section className="block">
         <h2>Charges against age and BMI</h2>
@@ -231,9 +235,10 @@ function ExploreTab() {
   const [markers, setMarkers] = useState(() => param("mk", true));
   const [binW, setBinW] = useState(() => param("bin", 2500));
   const [shareMode, setShareMode] = useState(() => param("sh", "pair", ["pair", "diff"]));
+  const [distView, setDistView] = useState(() => param("dv", "hist", ["hist", "cdf"]));
 
   const nn = Math.min(N, Math.max(1, Math.floor(n) || 1));
-  useUrlSync("explore", { m: method, n: nn, seed, s: strataCol, c: colorBy, v: view, mk: markers, bin: binW, sh: shareMode });
+  useUrlSync("explore", { m: method, n: nn, seed, s: strataCol, c: colorBy, v: view, mk: markers, bin: binW, sh: shareMode, dv: distView });
   const { sample, error } = useMemo(() => {
     try { return { sample: S.drawOne(method, population, nn, seed, strataCol) }; }
     catch (e) { return { error: e.message }; }
@@ -299,6 +304,17 @@ function ExploreTab() {
       </div>
       {String(n) !== String(nn) && <p className="note" role="status">n was adjusted to {nn}: the sample size must be a whole number from 1 to {N.toLocaleString()}.</p>}
 
+      {!error && sample && (
+        <div className="status" role="status" aria-label="Current sample">
+          <span><b>{METHODS[method]}</b>{method === "stratified" ? ` on ${strataCol}` : ""}</span>
+          <span>n = <b>{nn}</b></span>
+          <span>seed <b>{seed}</b></span>
+          <span className="st-sp">estimate <b>{money(sample.estimate)}</b></span>
+          <span>true mean <b>{money(TRUE_MEAN)}</b></span>
+          <span className={sample.estimate - TRUE_MEAN >= 0 ? "pos" : "neg"}>{signed(sample.estimate - TRUE_MEAN)}</span>
+        </div>
+      )}
+
       {error ? (
         <div className="err"><b>Can't draw this sample.</b> {error}. Choose a larger n, or a different stratification column.</div>
       ) : (
@@ -343,11 +359,11 @@ function ExploreTab() {
           <section className="block">
             <h2>How do the sampled charges compare with everyone's?</h2>
             <p className="sub">Same horizontal scale in both panels.</p>
-            <div className="opts"><Toggle label="Bin width" value={binW} onChange={setBinW} options={[[1000, "$1,000"], [2500, "$2,500"], [5000, "$5,000"]]} /></div>
+            <div className="opts"><Toggle label="Show as" value={distView} onChange={setDistView} options={[["hist", "Histograms"], ["cdf", "Cumulative curve"]]} />{distView === "hist" && <Toggle label="Bin width" value={binW} onChange={setBinW} options={[[1000, "$1,000"], [2500, "$2,500"], [5000, "$5,000"]]} />}</div>
             <div className="chart">
               <SaveBtn name="sample-vs-everyone" />
-              <DistributionPair values={population.values} sampled={idx} groupOf={groupOf} groupNames={names} colors={colors} trueMean={TRUE_MEAN} est={sample.estimate} top={TOP} binWidth={binW} />
-              <HowTo>The top panel shows how everyone's charges are spread out; the bottom panel shows the sampled people on the same dollar scale. Taller bars mean more people in that dollar range. The two vertical lines mark the true mean and this sample's mean.</HowTo>
+              {distView === "cdf" ? <CdfPair values={population.values} sampled={idx} trueMean={TRUE_MEAN} est={sample.estimate} top={TOP} /> : <DistributionPair values={population.values} sampled={idx} groupOf={groupOf} groupNames={names} colors={colors} trueMean={TRUE_MEAN} est={sample.estimate} top={TOP} binWidth={binW} />}
+              <HowTo>{distView === "cdf" ? "Each curve climbs from 0% to 100% as the charge rises: at any dollar amount, the height is the share of people with charges at or below it. If the blue sample curve hugs the grey curve for everyone, the sample's charges are spread much like the whole file's." : "The top panel shows how everyone's charges are spread out; the bottom panel shows the sampled people on the same dollar scale. Taller bars mean more people in that dollar range. The two vertical lines mark the true mean and this sample's mean."}</HowTo>
               {groupOf && <div className="legend">{names.map((g) => <span key={g}><span className="sw sq" style={{ background: colors[g] }} />{g}</span>)}</div>}
             </div>
           </section>
@@ -533,6 +549,8 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
             )}
             <HowTo>Each dot is the estimate from one separate sample. The black tick is the average of all the estimates in that row and the gold dashed line is the true mean. Dots spread far apart mean the estimates vary a lot from sample to sample. The numbers on the right summarise the dots in US dollars.{view === "hist" && " In histogram view, taller bars mean more estimates in that dollar range; bar heights are scaled within each row, so compare shapes and positions, not heights."}{band && " The shaded band covers the middle 90% of the estimates in each row."}</HowTo>
           </div>
+          <ResultSummary results={out.results} mode={tabKey === "size" ? "size" : "method"} />
+          <StabilityCard results={out.results} mode={tabKey === "size" ? "size" : "method"} />
           <MeasuresPanel />
           <ShapeTable results={out.results} />
           <ReproduceCard text={`${expName} · seed ${out.seed} · ${out.reps} repetitions${needsStrata ? ` · stratify on ${out.strataCol}` : ""} · baseline population`} />
@@ -752,6 +770,8 @@ function ChallengeTab() {
             {zoom === "shared" && <div className="strip-grid"><div /><StripAxis domain={shared} /><div /><div /><div /></div>}
             <HowTo>Each row is one condition: a method on the baseline or on the modified copy. Each dot is the estimate from one separate sample, the black tick is the average of the estimates, and the gold dashed line is the true mean of that row's own population. The numbers on the right summarise the dots in US dollars.{view === "hist" && " In histogram view, taller bars mean more estimates in that dollar range; bar heights are scaled within each row, so compare shapes and positions, not heights."}{band && " The shaded band covers the middle 90% of the estimates in each row."}</HowTo>
           </div>
+          <ResultSummary results={out.results} mode="challenge" />
+          <StabilityCard results={out.results} mode="challenge" />
           <MeasuresPanel />
           <ShapeTable results={out.results} />
           <ReproduceCard text={`Challenge · n = ${out.n} · seed ${out.seed} · ${out.reps} repetitions · stratify on ${out.strataCol} · modified copy: top ${out.count} ${out.col} = ${out.value} rows spaced every ${out.k.toFixed(2)} rows`} />

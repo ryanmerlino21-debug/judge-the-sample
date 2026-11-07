@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { PatternContext } from "./ctx.js";
 
 export const money = (x, d = 2) => (x < 0 ? "-$" : "$") + Math.abs(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -66,6 +66,7 @@ function RefLines({ x, tx, ex, y0, y1 }) {
 // view: "bars" (default) | "dots" (one dot per person) | "sorted" (people ordered from lowest to highest charges).
 // ticks: optional { rows: [1-based row numbers], start } shown under the axis for systematic sampling.
 export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est, view = "bars", ticks = null }) {
+  const [hv, setHv] = useState(null);
   const N = values.length, W = 980, L = 52, R = 150, T = 18;
   const showTicks = !!ticks && view === "bars";
   const B = showTicks ? 58 : 36, H = 340;
@@ -80,6 +81,12 @@ export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est, view
     values.map((v, i) => i).sort((a, b) => values[a] - values[b] || a - b).forEach((i, r) => { rank[i] = r; });
   }
   const pos = (i) => (rank ? rank[i] : i);
+  let inv = null;
+  if (rank) { inv = new Array(N); rank.forEach((r, i) => { inv[r] = i; }); }
+  const onMove = (e) => {
+    const r = e.currentTarget.getBoundingClientRect(), vx = ((e.clientX - r.left) * W) / r.width, p = Math.floor((vx - L) / bw);
+    setHv(p < 0 || p >= N ? null : (inv ? inv[p] : p));
+  };
   // right-margin labels, kept at least 40px apart
   const items = [{ k: "true", y: Y(trueMean), name: "True mean", val: trueMean, c: "var(--truec)", dash: true }];
   if (est != null) items.push({ k: "est", y: Y(est), name: "Sample estimate", val: est, c: "var(--samplec)" });
@@ -91,8 +98,10 @@ export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est, view
   const aria = view === "dots" ? "One dot per person in file order; height is charges; sampled people are large coloured dots"
     : view === "sorted" ? "One bar per person sorted from lowest to highest charges; sampled people are thick coloured bars with a dot on top"
     : "One bar per person in file order; bar height is charges; sampled people are thick coloured bars with a dot on top";
+  const hvText = hv == null ? "" : `Row ${hv + 1} · ${money0(values[hv])}${groupOf ? " · " + groupOf[hv] : ""}${sel.has(hv) ? " · in the sample" : ""}`;
+  const hvW = hvText.length * 6.6 + 18, hvX = hv == null ? 0 : Math.min(Math.max(L + (pos(hv) + 0.5) * bw - hvW / 2, L), W - R - hvW);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={aria}>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={aria} onMouseMove={onMove} onMouseLeave={() => setHv(null)} style={{ cursor: "crosshair" }}>
       {yt.map((t) => (
         <g key={t}>
           <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} strokeWidth="1" style={stroke("var(--grid)")} />
@@ -130,6 +139,14 @@ export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est, view
           <text x={W - R + 32} y={ly[j] + 14} fontSize="14" fontWeight="700" style={fill("var(--ink)")}>{money0(it.val)}</text>
         </g>
       ))}
+      {hv != null && (
+        <g pointerEvents="none">
+          <line x1={L + (pos(hv) + 0.5) * bw} x2={L + (pos(hv) + 0.5) * bw} y1={T} y2={H - B} strokeWidth="1.2" strokeDasharray="3 3" style={stroke("var(--ink2)")} />
+          <circle cx={L + (pos(hv) + 0.5) * bw} cy={Y(values[hv])} r="4.5" fill="none" strokeWidth="2" style={stroke("var(--ink)")} />
+          <rect x={hvX} y="0" width={hvW} height="20" rx="4" style={{ fill: "var(--ink)" }} opacity="0.92" />
+          <text x={hvX + hvW / 2} y="14" fontSize="11.5" fontWeight="600" textAnchor="middle" style={{ fill: "var(--surface)" }}>{hvText}</text>
+        </g>
+      )}
       <text x={L} y={H - 14} fontSize="11" style={fill("var(--muted)")}>{leftText}</text>
       <text x={(L + W - R) / 2} y={H - 14} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{xAxisText}</text>
       <text x={W - R} y={H - 14} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{rightText}</text>
@@ -544,6 +561,112 @@ export function FrequencyGrid({ counts, draws }) {
       <text x="0" y={H + 16} fontSize="11" style={fill("var(--muted)")}>row 1</text>
       <text x={W / 2} y={H + 16} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>read left to right, top to bottom, in file order →</text>
       <text x={W} y={H + 16} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {n.toLocaleString()}</text>
+    </svg>
+  );
+}
+
+// ---- Cumulative distribution: the share of people at or below each charge, for everyone and for the sample.
+export function CdfPair({ values, sampled, trueMean, est, top }) {
+  const W = 900, H = 300, L = 54, R = 20, T = 26, B = 42;
+  const x = (v) => L + (v / top) * (W - L - R), y = (p) => T + (H - T - B) * (1 - p);
+  const steps = (arr) => {
+    const a = [...arr].sort((p, q) => p - q), n = a.length, pts = [`${x(0)},${y(0)}`];
+    a.forEach((v, i) => { pts.push(`${x(v)},${y(i / n)}`); pts.push(`${x(v)},${y((i + 1) / n)}`); });
+    pts.push(`${x(top)},${y(1)}`);
+    return pts.join(" ");
+  };
+  const sv = sampled.map((i) => values[i]);
+  const half = (arr) => [...arr].sort((p, q) => p - q)[Math.floor(arr.length / 2)];
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Cumulative distribution of charges: the share of people at or below each charge, for everyone and for the sample">
+      {[0, 0.25, 0.5, 0.75, 1].map((p) => (
+        <g key={p}>
+          <line x1={L} x2={W - R} y1={y(p)} y2={y(p)} strokeWidth="1" style={stroke("var(--grid)")} />
+          <text x={L - 8} y={y(p) + 4} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{Math.round(p * 100)}%</text>
+        </g>
+      ))}
+      {niceTicks(0, top, 7).map((t) => <text key={t} x={x(t)} y={H - B + 18} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>)}
+      <line x1={L} x2={W - R} y1={H - B} y2={H - B} strokeWidth="1" style={stroke("var(--axis)")} />
+      <polyline points={steps(values)} fill="none" strokeWidth="3.4" strokeLinejoin="round" style={stroke("var(--pop)")} />
+      <polyline points={steps(sv)} fill="none" strokeWidth="2.2" strokeLinejoin="round" style={stroke(ACCENT)} />
+      <line x1={x(trueMean)} x2={x(trueMean)} y1={T - 6} y2={H - B} strokeWidth="2" strokeDasharray="6 4" style={stroke("var(--truec)")} />
+      {est != null && <line x1={x(est)} x2={x(est)} y1={T - 6} y2={H - B} strokeWidth="2.2" style={stroke("var(--samplec)")} />}
+      <text x={x(trueMean) + (est != null && est < trueMean ? 6 : -6)} y="14" fontSize="12" fontWeight="600" textAnchor={est != null && est < trueMean ? "start" : "end"} style={fill("var(--ink2)")}>True mean {money0(trueMean)}</text>
+      {est != null && <text x={x(est) + (est < trueMean ? -6 : 6)} y="14" fontSize="12" fontWeight="700" textAnchor={est < trueMean ? "end" : "start"} style={fill("var(--ink)")}>Sample {money0(est)}</text>}
+      <g fontSize="12" fontWeight="600">
+        <line x1={W - R - 190} x2={W - R - 168} y1={H - B - 34} y2={H - B - 34} strokeWidth="3.4" style={stroke("var(--pop)")} /><text x={W - R - 162} y={H - B - 30} style={fill("var(--ink2)")}>Everyone (median {money0(half(values))})</text>
+        <line x1={W - R - 190} x2={W - R - 168} y1={H - B - 14} y2={H - B - 14} strokeWidth="2.2" style={stroke(ACCENT)} /><text x={W - R - 162} y={H - B - 10} style={fill("var(--ink2)")}>Your sample (median {money0(half(sv))})</text>
+      </g>
+    </svg>
+  );
+}
+
+// ---- Bars for bias / SD / RMSE: one bar per condition. rows: [{ label, sub, bias, sd, rmse, color }]
+export function ResultBars({ rows, metric }) {
+  const W = 900, LBL = 270, R = 110, rowH = 40, T = 8, B = 34, H = T + rows.length * rowH + B;
+  const vals = rows.map((r) => r[metric]);
+  const diverge = metric === "bias";
+  const maxAbs = Math.max(...vals.map(Math.abs), 1) * 1.05;
+  const half = (W - LBL - R) / 2;
+  const x0 = diverge ? LBL + half : LBL;
+  const len = (v) => (diverge ? (Math.abs(v) / maxAbs) * half : (Math.abs(v) / maxAbs) * (W - LBL - R));
+  const ticks = niceTicks(diverge ? -maxAbs : 0, maxAbs, 4);
+  const X = (v) => (diverge ? x0 + (v / maxAbs) * half : LBL + (v / maxAbs) * (W - LBL - R));
+  const names = { bias: "Bias", sd: "SD of the estimates", rmse: "RMSE" };
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${names[metric]} for each condition, in US dollars`}>
+      {ticks.map((t) => (
+        <g key={t}>
+          <line x1={X(t)} x2={X(t)} y1={T} y2={H - B} strokeWidth="1" style={stroke("var(--grid)")} />
+          <text x={X(t)} y={H - 12} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{diverge ? (t < 0 ? "−" : t > 0 ? "+" : "") + moneyK(Math.abs(t)) : moneyK(t)}</text>
+        </g>
+      ))}
+      {diverge && <line x1={x0} x2={x0} y1={T} y2={H - B} strokeWidth="2" style={stroke("var(--axis)")} />}
+      {rows.map((r, i) => {
+        const y = T + i * rowH + rowH / 2, v = r[metric], w = len(v), left = diverge && v < 0;
+        return (
+          <g key={r.label + i}>
+            <text x={LBL - 12} y={y - (r.sub ? 1 : -4)} fontSize="13" fontWeight="600" textAnchor="end" style={fill("var(--ink)")}>{r.label}</text>
+            {r.sub && <text x={LBL - 12} y={y + 13} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{r.sub}</text>}
+            <rect x={left ? x0 - w : x0} y={y - 11} width={Math.max(w, 1.5)} height="22" rx="4" style={fill(r.color)}><title>{`${r.label}: ${names[metric]} ${money(v)}`}</title></rect>
+            <text x={left ? x0 - w - 8 : x0 + w + 8} y={y + 4} fontSize="12.5" fontWeight="700" textAnchor={left ? "end" : "start"} style={fill("var(--ink)")}>{diverge ? signed(v) : money(v)}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ---- How a running bias or SD settles as repetitions accumulate (for one row of estimates).
+export function ConvergenceChart({ estimates, trueMean, metric }) {
+  const W = 900, H = 280, L = 70, R = 24, T = 20, B = 44, n = estimates.length;
+  const pts = []; let mean = 0, m2 = 0;
+  estimates.forEach((e, i) => {
+    const k = i + 1, d = e - mean; mean += d / k; m2 += d * (e - mean);
+    pts.push({ k, bias: mean - trueMean, sd: Math.sqrt(m2 / k) });
+  });
+  const use = pts.filter((p) => (metric === "sd" ? p.k >= 2 : true));
+  const vals = use.map((p) => p[metric]);
+  const lo = metric === "sd" ? 0 : -Math.max(...vals.map(Math.abs), 1) * 1.1, hi = metric === "sd" ? Math.max(...vals, 1) * 1.1 : Math.max(...vals.map(Math.abs), 1) * 1.1;
+  const X = (k) => L + ((k - 1) / (n - 1 || 1)) * (W - L - R), Y = (v) => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+  const last = use[use.length - 1];
+  const xt = [1, ...[0.25, 0.5, 0.75, 1].map((f) => Math.round(f * n))].filter((v, i, a) => a.indexOf(v) === i);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Running ${metric === "sd" ? "SD" : "bias"} of the estimates as repetitions accumulate`}>
+      {niceTicks(lo, hi, 4).map((t) => (
+        <g key={t}>
+          <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} strokeWidth="1" style={stroke("var(--grid)")} />
+          <text x={L - 8} y={Y(t) + 4} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{metric === "bias" ? (t < 0 ? "−" : t > 0 ? "+" : "") + moneyK(Math.abs(t)) : moneyK(t)}</text>
+        </g>
+      ))}
+      {metric === "bias" && <line x1={L} x2={W - R} y1={Y(0)} y2={Y(0)} strokeWidth="2" strokeDasharray="6 4" style={stroke("var(--truec)")} />}
+      {n > 100 && <g><line x1={X(100)} x2={X(100)} y1={T} y2={H - B} strokeWidth="1.2" strokeDasharray="2 4" style={stroke("var(--muted)")} /><text x={X(100) + 5} y={T + 10} fontSize="11" style={fill("var(--muted)")}>100 repetitions</text></g>}
+      <polyline points={use.map((p) => `${X(p.k)},${Y(p[metric])}`).join(" ")} fill="none" strokeWidth="2.2" strokeLinejoin="round" style={stroke(ACCENT)} />
+      <circle cx={X(last.k)} cy={Y(last[metric])} r="5" strokeWidth="2" style={{ fill: ACCENT, stroke: "var(--surface)" }} />
+      <text x={X(last.k) - 8} y={Y(last[metric]) - 10} fontSize="12.5" fontWeight="700" textAnchor="end" style={fill("var(--ink)")}>{metric === "bias" ? signed(last.bias) : money(last.sd)} after {n}</text>
+      <line x1={L} x2={W - R} y1={H - B} y2={H - B} strokeWidth="1" style={stroke("var(--axis)")} />
+      {xt.map((k) => <text key={k} x={X(k)} y={H - B + 18} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{k}</text>)}
+      <text x={(L + W - R) / 2} y={H - 8} fontSize="11.5" textAnchor="middle" style={fill("var(--muted)")}>number of repetitions so far →</text>
     </svg>
   );
 }
