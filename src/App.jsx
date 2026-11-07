@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { notify } from "./ctx.js";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
 import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks, ReproduceCard, EstimateRuler, SampledPeople, Representativeness } from "./extras.jsx";
@@ -6,7 +7,7 @@ import { getResult, setResult, useResults } from "./store.js";
 import { DataChecks } from "./integrity.jsx";
 import { PreviousRun, ShapeTable, ChallengeSummary } from "./compare.jsx";
 import { Tour } from "./tour.jsx";
-import { TabIcon, DisplayMenu, PageNav, BackToTop, TabIntro } from "./shell.jsx";
+import { TabIcon, DisplayMenu, PageNav, BackToTop, TabIntro, Toast } from "./shell.jsx";
 import { ResultSummary, StabilityCard } from "./resultviz.jsx";
 import { HeatMap } from "./heat.jsx";
 import { ResultsTab } from "./results.jsx";
@@ -303,6 +304,7 @@ function ExploreTab() {
         <button type="button" className="btn ghost" onClick={() => { setMethod("srs"); setN(100); setSeed(2026); setStrataCol("smoker"); setColorBy("none"); setView("bars"); setMarkers(true); setBinW(2500); setShareMode("pair"); }}>Reset to defaults</button>
       </div>
       {String(n) !== String(nn) && <p className="note" role="status">n was adjusted to {nn}: the sample size must be a whole number from 1 to {N.toLocaleString()}.</p>}
+      <p className="hint"><b>n</b> is how many people are in one sample. The <b>seed</b> fixes the random choices, so the same seed and settings always give the same sample. <b>Colour people by</b> shows a column on the bars.</p>
 
       {!error && sample && (
         <div className="status" role="status" aria-label="Current sample">
@@ -478,11 +480,11 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
   const downloadCsv = () => {
     const csv = [HEAD, ...rowsOf()].map((r) => r.join(",")).join("\n");
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `${expName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.csv`; a.click();
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `${expName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.csv`; a.click(); notify("Downloaded " + a.download);
   };
   const copyRows = async () => {
     const md = rowsOf().map((r) => "| " + r.join(" | ") + " |").join("\n");
-    try { await navigator.clipboard.writeText(md); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
+    try { await navigator.clipboard.writeText(md); notify("Rows copied: paste them into your results table"); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
   };
 
   return (
@@ -612,6 +614,7 @@ function ChallengeTab() {
   const [view, setView] = useState(() => param("v", "dots", ["dots", "hist"]));
   const [band, setBand] = useState(() => param("band", false));
   const [copyView, setCopyView] = useState(() => param("cv", "bars", ["bars", "dots", "sorted"]));
+  const [copyShow, setCopyShow] = useState(() => param("cs", "both", ["copy", "both", "orig"]));
   const [out, setOut] = useState(() => getResult("challenge") || null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -619,7 +622,7 @@ function ChallengeTab() {
   const nn = Math.min(N, Math.max(1, Math.floor(n) || 1));
   const k = matchInterval ? N / nn : Number(interval) || 1;
   const values = groupCounts[col].map(([g]) => g);
-  useUrlSync("challenge", { col, val: value, cnt: Number(count) || 1, n: nn, mi: matchInterval, int: Number(interval) || 1, s: strataCol, seed, reps, z: zoom, v: view, band, cv: copyView });
+  useUrlSync("challenge", { col, val: value, cnt: Number(count) || 1, n: nn, mi: matchInterval, int: Number(interval) || 1, s: strataCol, seed, reps, z: zoom, v: view, band, cv: copyView, cs: copyShow });
 
   const built = useMemo(() => {
     try { return { mod: S.spaceRows(population, { col, value, count: Number(count) || 1, interval: k }) }; }
@@ -651,15 +654,15 @@ function ChallengeTab() {
   const HEAD = ["Experiment", "Population or condition", "Method", "Settings", "Seed (or exact)", "n", "Repetitions or starts", "Type", "True mean", "Bias", "SD", "RMSE"];
   const downloadCsv = () => {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([[HEAD, ...rowsOf()].map((r) => r.join(",")).join("\n")], { type: "text/csv" })); a.download = "challenge-results.csv"; a.click();
+    a.href = URL.createObjectURL(new Blob([[HEAD, ...rowsOf()].map((r) => r.join(",")).join("\n")], { type: "text/csv" })); a.download = "challenge-results.csv"; a.click(); notify("Downloaded " + a.download);
   };
   const copyRows = async () => {
-    try { await navigator.clipboard.writeText(rowsOf().map((r) => "| " + r.join(" | ") + " |").join("\n")); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
+    try { await navigator.clipboard.writeText(rowsOf().map((r) => "| " + r.join(" | ") + " |").join("\n")); notify("Rows copied: paste them into your results table"); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
   };
   const downloadCopy = () => {
     const m = built.mod, cols = Object.keys(m.groups);
     const csv = [["row_id", ...cols, TARGET].join(","), ...m.values.map((v, i) => [m.rowIds[i], ...cols.map((c) => m.groups[c][i]), v].join(","))].join("\n");
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "healthcare_costs_MODIFIED_copy.csv"; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "healthcare_costs_MODIFIED_copy.csv"; a.click(); notify("Downloaded " + a.download);
   };
 
   const shared = out ? domainFor(out.results) : null;
@@ -707,10 +710,21 @@ function ChallengeTab() {
         <section className="block">
           <h2>The modified copy <span className="tag gold">Modified population</span></h2>
           <p className="sub">Only row order changes. Coloured bars are the {Number(count)} highest-charge rows with {col} = {value}, placed at positions round(1 + j × {k.toFixed(2)}), j = 0, 1, 2, …, in their original relative order among themselves. All other rows keep their original relative order.</p>
-          <div className="opts"><Toggle label="View" value={copyView} onChange={setCopyView} options={[["bars", "Bars, file order"], ["dots", "Dots, file order"], ["sorted", "Sorted by charges"]]} /></div>
+          <div className="opts"><Toggle label="Show" value={copyShow} onChange={setCopyShow} options={[["both", "Original and modified"], ["copy", "Modified copy only"], ["orig", "Original order only"]]} /><Toggle label="View" value={copyView} onChange={setCopyView} options={[["bars", "Bars"], ["dots", "Dots"], ["sorted", "Sorted"]]} /></div>
           <div className="chart">
             <SaveBtn name="modified-copy" />
-            <RowBars values={built.mod.values} sampled={built.mod.movedPositions} colorOf={() => ACCENT} groupOf={built.mod.groups[col]} trueMean={S.trueMean(built.mod.values)} est={null} view={copyView} />
+            {copyShow !== "copy" && (
+              <>
+                <h3 className="chartlabel">Original order (baseline): the same {Number(count)} rows, where they already sit in the file</h3>
+                <RowBars values={population.values} sampled={built.mod.movedPositions.map((p) => built.mod.order[p])} colorOf={() => ACCENT} groupOf={population.groups[col]} trueMean={TRUE_MEAN} est={null} view={copyView} />
+              </>
+            )}
+            {copyShow !== "orig" && (
+              <>
+                <h3 className="chartlabel">Modified copy: the same rows, spaced about every {k.toFixed(2)} rows</h3>
+                <RowBars values={built.mod.values} sampled={built.mod.movedPositions} colorOf={() => ACCENT} groupOf={built.mod.groups[col]} trueMean={S.trueMean(built.mod.values)} est={null} view={copyView} />
+              </>
+            )}
             <HowTo>Same layout as the Explore chart, drawn for the modified copy: {copyView === "dots" ? "one dot per person in the copy's file order" : copyView === "sorted" ? "one bar per person, sorted from the lowest to the highest charges" : "one bar per person in the copy's file order"}. Coloured marks are the rows that were moved; the gold dashed line is the true mean of the copy.</HowTo>
             <div className="legend">
               <span><span className="sw sq" style={{ background: "var(--pop)" }} />other rows (original relative order)</span>
@@ -906,6 +920,7 @@ export default function App() {
             <div className="eyebrow">Sampling activity · Healthcare costs · N = 1,338</div>
             <h1>Judge the Sample</h1>
             <div className="question">Which sampling method would you trust for this population, at what sample size, and with what limits?</div>
+            <div className="bn-chips"><span><b>{N.toLocaleString()}</b> people</span><span>target <b>charges</b> (US$)</span><span>true mean <b>{money(TRUE_MEAN)}</b></span></div>
           </div>
         </header>
         <nav className="tabs" role="tablist" aria-label="Sections">
@@ -930,6 +945,7 @@ export default function App() {
         <SiteFooter nPeople={N} />
         <Tour open={tourOpen} onClose={() => setTourOpen(false)} />
         <BackToTop />
+        <Toast />
       </div>
       </PatternContext.Provider>
     </NavContext.Provider>

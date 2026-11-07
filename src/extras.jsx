@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { notify } from "./ctx.js";
 import { NavContext } from "./ctx.js";
 import { population } from "./data.js";
 import * as S from "./sampling.js";
-import { RowBars, StripRow, RunningMean, BiasSpreadDiagram, FrequencyGrid, ACCENT, money, money0, signed } from "./charts.jsx";
+import { RowBars, StripRow, RunningMean, BiasSpreadDiagram, FrequencyGrid, HistRow, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
 const METHOD_NAMES = { srs: "Simple random", systematic: "Systematic", stratified: "Stratified" };
@@ -49,7 +50,7 @@ export function Toggle({ label, value, onChange, options }) {
 export function CopyLink() {
   const [ok, setOk] = useState(false);
   const copy = async () => {
-    try { await navigator.clipboard.writeText(location.href); setOk(true); setTimeout(() => setOk(false), 2000); } catch { /* clipboard unavailable */ }
+    try { await navigator.clipboard.writeText(location.href); notify("Link to these settings copied"); setOk(true); setTimeout(() => setOk(false), 2000); } catch { /* clipboard unavailable */ }
   };
   return <button type="button" className="btn ghost" onClick={copy}>{ok ? "Link copied" : "Copy link to these settings"}</button>;
 }
@@ -122,7 +123,7 @@ export async function saveCardAsPng(card, name) {
   const blob = await cardToPngBlob(card);
   if (!blob) return;
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = `${name}.png`; a.click();
+  a.href = URL.createObjectURL(blob); a.download = `${name}.png`; a.click(); notify("Downloaded " + a.download);
 }
 
 export function SaveBtn({ name = "chart" }) {
@@ -205,10 +206,12 @@ export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean
           <button className="btn ghost" onClick={() => add(10)}>Draw 10 more</button>
           <button className="btn ghost" onClick={() => add(100)}>Draw 100 more</button>
           <button className="btn ghost" onClick={() => setExtra(0)} disabled={extra === 0}>Back to one sample</button>
-          <Toggle label="View" value={view} onChange={setView} options={[["dots", "Each estimate"], ["running", "Running average"], ["picked", "How often each person was picked"]]} />
+          <Toggle label="View" value={view} onChange={setView} options={[["dots", "Each estimate"], ["hist", "Histogram"], ["running", "Running average"], ["picked", "How often each person was picked"]]} />
         </div>
         {view === "dots" ? (
           <StripRow estimates={draws} domain={domainOf(draws, trueMean)} trueMean={trueMean} meanOfEstimates={m} axis tickSize={8.5} label={`${draws.length} estimates from ${draws.length} samples`} />
+        ) : view === "hist" ? (
+          <HistRow estimates={draws} domain={domainOf(draws, trueMean)} trueMean={trueMean} meanOfEstimates={m} axis tickSize={8.5} bins={Math.min(30, Math.max(8, Math.ceil(Math.sqrt(draws.length) * 1.6)))} label={`Histogram of ${draws.length} estimates`} />
         ) : view === "running" ? (
           <RunningMean draws={draws} trueMean={trueMean} />
         ) : (
@@ -221,9 +224,9 @@ export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean
               <span><span className="sw sq" style={{ background: ACCENT, opacity: 0.35 }} />picked in a few draws</span>
               <span><span className="sw sq" style={{ background: ACCENT }} />picked in the most draws</span>
             </>
-          ) : view === "dots" ? (
+          ) : view === "dots" || view === "hist" ? (
             <>
-              <span><span className="sw" style={{ background: ACCENT, opacity: 0.5 }} />one dot = one sample's estimate</span>
+              <span><span className={view === "hist" ? "sw sq" : "sw"} style={{ background: ACCENT, opacity: 0.5 }} />{view === "hist" ? "bar height = number of estimates" : "one dot = one sample's estimate"}</span>
               <span><span className="key" style={{ borderTop: 0, width: 3, height: 12, background: "var(--ink)", borderRadius: 2 }} /> mean of the estimates so far</span>
             </>
           ) : (
@@ -231,7 +234,9 @@ export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean
           )}
           {view !== "picked" && <span><span className="key dash" /> true mean {money(trueMean)}</span>}
         </div>
-        <HowTo>{view === "dots"
+        <HowTo>{view === "hist"
+          ? <>Each bar counts the estimates that fall in that dollar range, so taller bars mean more of the {draws.length} {draws.length === 1 ? "estimate" : "estimates"} landed there. The black tick is the average of the estimates and the gold dashed line is the true mean of everyone.</>
+          : view === "dots"
           ? <>Each dot is the estimate from one separate sample of {n} {n === 1 ? "person" : "people"}. The black tick is the average of the dots so far and the gold dashed line is the true mean of everyone. Dots far apart mean the estimates vary a lot from sample to sample.</>
           : view === "running"
           ? <>The line shows the average of all the estimates drawn so far, after each new draw. The gold dashed line is the true mean of everyone. Early on the line moves a lot because it rests on few draws.</>
@@ -401,7 +406,7 @@ export function SiteFooter({ nPeople }) {
 export function ReproduceCard({ text }) {
   const [ok, setOk] = useState(false);
   const copy = async () => {
-    try { await navigator.clipboard.writeText(text); setOk(true); setTimeout(() => setOk(false), 2000); } catch { /* clipboard unavailable */ }
+    try { await navigator.clipboard.writeText(text); notify("Settings copied"); setOk(true); setTimeout(() => setOk(false), 2000); } catch { /* clipboard unavailable */ }
   };
   return (
     <p className="meta"><b>To reproduce this result:</b> {text} · <button type="button" className="linkbtn" onClick={copy}>{ok ? "Copied" : "Copy these settings as text"}</button></p>

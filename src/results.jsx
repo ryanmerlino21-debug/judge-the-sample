@@ -1,4 +1,5 @@
 import React, { useContext, useState } from "react";
+import { notify } from "./ctx.js";
 import { population } from "./data.js";
 import { NavContext } from "./ctx.js";
 import { money, signed } from "./charts.jsx";
@@ -11,12 +12,12 @@ export function ResultsTab() {
   const [copied, setCopied] = useState(false);
   const rows = ledgerRows(data);
   const copy = async () => {
-    try { await navigator.clipboard.writeText(rows.map((x) => "| " + cells(x).join(" | ") + " |").join("\n")); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
+    try { await navigator.clipboard.writeText(rows.map((x) => "| " + cells(x).join(" | ") + " |").join("\n")); notify("Rows copied: paste them into your results table"); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard unavailable */ }
   };
   const csv = () => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([[HEAD, ...rows.map(cells)].map((l) => l.join(",")).join("\n")], { type: "text/csv" }));
-    a.download = "current-results.csv"; a.click();
+    a.download = "current-results.csv"; a.click(); notify("Downloaded " + a.download);
   };
   const have = { methods: !!data.methods, size: !!data.size, challenge: !!data.challenge };
   return (

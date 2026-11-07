@@ -278,7 +278,7 @@ section.block > h2 { font-size: 24px; margin-bottom: 8px; }
 button.btn.ghost:disabled::before { display: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .totop { position: fixed; left: 18px; bottom: 18px; z-index: 12; background: #16466f; color: #fff; border: 0; border-radius: 99px; padding: 9px 16px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.3); }
-.fadein { animation: fadein .22s ease-out; } @keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.fadein { animation: fadein .22s ease-out; } @keyframes fadein { from { opacity: .55; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .fadein, .btn:disabled::before { animation: none; } * { scroll-behavior: auto !important; } }
 
 @media (max-width: 760px) {
@@ -308,3 +308,21 @@ table.heat th { font-size: 12.5px; color: var(--ink); text-transform: none; lett
 @media print { .status { display: none !important; } }
 main section.block { margin-top: 34px; } main > .tabintro + section.block, main > .tabintro + details + .cards { margin-top: 0; }
 main > details, main > .callout { margin-bottom: 8px; }
+
+/* phones: keep big charts legible by letting them scroll sideways instead of shrinking their text */
+@media (max-width: 760px) {
+  .chart { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .chart > svg { min-width: 700px; }
+  .chart > svg:first-of-type { margin-top: 4px; }
+}
+
+/* ---- round 3 ---- */
+.chart .opts { border: 0; background: transparent; padding: 4px 0 12px; border-radius: 0; }
+.bn-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; } .bn-chips span { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); border-radius: 99px; padding: 3px 12px; font-size: 12.5px; } .bn-chips b { color: #fff; }
+.hint { font-size: 12.5px; color: var(--ink2); margin: -4px 0 16px; max-width: 820px; } .hint b { color: var(--ink); }
+.chartlabel { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink); margin: 6px 0 -2px; font-weight: 700; }
+.chartlabel + svg { margin-top: 2px; } .chart > svg + .chartlabel { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--axis); }
+tbody tr:nth-child(even) td, tbody tr:nth-child(even) th[scope="row"] { background: color-mix(in srgb, var(--wash) 45%, transparent); }
+table.heat tbody tr:nth-child(even) td { background: unset; } table.cheat tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--wash) 45%, transparent); }
+.toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: #0e2a43; color: #fff; padding: 10px 20px; border-radius: 99px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 40; animation: fadein .2s ease-out; max-width: calc(100vw - 32px); text-align: center; }
+@media print { .toast, .hint, .bn-chips { display: none !important; } }

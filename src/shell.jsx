@@ -115,3 +115,15 @@ export function TabIntro({ tab, icon }) {
     </div>
   );
 }
+
+export function Toast() {
+  const [msg, setMsg] = useState(null);
+  useEffect(() => {
+    let t = 0;
+    const on = (e) => { setMsg(e.detail); clearTimeout(t); t = setTimeout(() => setMsg(null), 2600); };
+    window.addEventListener("jts-toast", on);
+    return () => { window.removeEventListener("jts-toast", on); clearTimeout(t); };
+  }, []);
+  if (!msg) return null;
+  return <div className="toast" role="status" aria-live="polite">{msg}</div>;
+}

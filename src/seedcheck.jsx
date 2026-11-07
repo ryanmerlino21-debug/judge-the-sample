@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { notify } from "./ctx.js";
 import { population } from "./data.js";
 import * as S from "./sampling.js";
 import { niceTicks, money, money0, moneyK, signed, ACCENT } from "./charts.jsx";
@@ -71,7 +72,7 @@ export function SeedCheck({ baseSeed, reps, runSeed, rowLabel, disabled = false,
     const lines = [head];
     res.byseed.forEach((b, j) => b.forEach((r) => lines.push([`"${rowLabel(r)}"`, r.type === "exact" ? "exact" : res.seeds[j], r.type, r.n, r.count, r.trueMean.toFixed(2), r.bias.toFixed(2), r.sd.toFixed(2), r.rmse.toFixed(2)])));
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([lines.map((l) => l.join(",")).join("\n")], { type: "text/csv" })); a.download = `${name}.csv`; a.click();
+    a.href = URL.createObjectURL(new Blob([lines.map((l) => l.join(",")).join("\n")], { type: "text/csv" })); a.download = `${name}.csv`; a.click(); notify("Downloaded " + a.download);
   };
 
   return (

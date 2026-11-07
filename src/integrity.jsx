@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { notify } from "./ctx.js";
 import { population, RAW_CSV, HEADER_COLUMNS, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
 import { money } from "./charts.jsx";
@@ -46,7 +47,7 @@ export function DataChecks() {
   };
   const download = () => {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([RAW_CSV], { type: "text/csv" })); a.download = "healthcare_costs.csv"; a.click();
+    a.href = URL.createObjectURL(new Blob([RAW_CSV], { type: "text/csv" })); a.download = "healthcare_costs.csv"; a.click(); notify("Downloaded " + a.download);
   };
   const passed = checks.filter((c) => !c.info && c.pass).length, total = checks.filter((c) => !c.info).length;
   return (
