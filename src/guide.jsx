@@ -4,6 +4,7 @@ import * as S from "./sampling.js";
 import { NavContext } from "./ctx.js";
 import { money, signed } from "./charts.jsx";
 import { MeasuresPanel } from "./extras.jsx";
+import { QuickFacts, Prompts, Changelog, Shortcuts } from "./about.jsx";
 
 const N = population.values.length;
 const METHOD_NAMES = { srs: "Simple random", systematic: "Systematic", stratified: "Stratified" };
@@ -173,6 +174,10 @@ export function GuideTab() {
         <MeasuresPanel />
       </section>
       <SelfChecks />
+      <Prompts />
+      <QuickFacts />
+      <Changelog />
+      <Shortcuts />
       <CitePanel />
     </>
   );

@@ -5,6 +5,7 @@ import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, 
 import { getResult, setResult, useResults } from "./store.js";
 import { DataChecks } from "./integrity.jsx";
 import { PreviousRun, ShapeTable, ChallengeSummary } from "./compare.jsx";
+import { Tour } from "./tour.jsx";
 import { ResultsTab } from "./results.jsx";
 import { PatternContext } from "./ctx.js";
 import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
@@ -849,6 +850,23 @@ export default function App() {
   const openGlossary = (term) => { setFocus(term); setTab("gloss"); history.replaceState(null, "", "#gloss"); };
   const goTab = (k) => { go(k); window.scrollTo({ top: 0 }); };
   const results = useResults();
+  const [tourOpen, setTourOpen] = useState(false);
+  useEffect(() => {
+    let armed = false, t = 0;
+    const map = { p: "pop", e: "explore", m: "methods", s: "size", c: "challenge", r: "results", u: "guide", l: "gloss" };
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = (e.target && e.target.tagName) || "";
+      if (["INPUT", "SELECT", "TEXTAREA"].includes(tag)) return;
+      if (armed && map[e.key]) { armed = false; clearTimeout(t); goTab(map[e.key]); return; }
+      if (e.key === "g") { armed = true; clearTimeout(t); t = setTimeout(() => { armed = false; }, 1200); return; }
+      if (e.key === "?") { goTab("guide"); setTimeout(() => document.querySelector("h2")?.scrollIntoView(), 50); }
+      armed = false;
+    };
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener("keydown", onKey); clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [big, setBig] = useState(() => { try { return localStorage.getItem("jts-text") === "large"; } catch { return false; } });
   useEffect(() => { document.documentElement.dataset.text = big ? "large" : "standard"; try { localStorage.setItem("jts-text", big ? "large" : "standard"); } catch { /* storage unavailable */ } }, [big]);
   useEffect(() => {
@@ -864,6 +882,7 @@ export default function App() {
         <header className="banner">
           <div className="bn-tools">
             <button type="button" aria-pressed={theme === "dark"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? "Light mode" : "Dark mode"}</button>
+            <button type="button" onClick={() => setTourOpen(true)}>Take a tour</button>
             <button type="button" aria-pressed={big} onClick={() => setBig(!big)}>{big ? "Text: larger" : "Text: standard"}</button>
             <button type="button" aria-pressed={patterns} onClick={() => setPatterns(!patterns)} title="Adds textures to coloured group bars, so groups never depend on colour alone">{patterns ? "Patterns: on" : "Patterns: off"}</button>
           </div>
@@ -891,6 +910,7 @@ export default function App() {
           </div>
         </main>
         <SiteFooter nPeople={N} />
+        <Tour open={tourOpen} onClose={() => setTourOpen(false)} />
       </div>
       </PatternContext.Provider>
     </NavContext.Provider>

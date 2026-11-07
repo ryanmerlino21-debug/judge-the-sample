@@ -1,0 +1,17 @@
+{
+  "name": "Judge the Sample: healthcare costs",
+  "short_name": "Judge the Sample",
+  "description": "Compare simple random, systematic and stratified sampling on a finite population of 1,338 people.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0e2a43",
+  "theme_color": "#0e2a43",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
