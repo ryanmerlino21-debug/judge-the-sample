@@ -7,6 +7,7 @@ App link: https://ryanmerlino21-debug.github.io/judge-the-sample/
 
 - **Scenario:** healthcare costs
 - **Data file:** `data/healthcare_costs.csv` (source, licence and provenance in `data/README.md`)
+- **Data source:** the `insurance.csv` teaching dataset from Brett Lantz, *Machine Learning with R* (Packt), via the stedy/Machine-Learning-with-R-datasets repository (https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv). Described by its author as simulated from US Census statistics; not real patient records.
 - **Seed(s) used for my evidence** (exact enumeration needs no seed): 2026 (I also tested 481920)
 
 ## Run it on your computer

@@ -260,12 +260,17 @@ function ExploreTab() {
               <p className="small"><b>Design that applies:</b> {design.kind}. N ÷ n = {N} ÷ {nn} = {design.k.toFixed(3).replace(/\.?0+$/, "")}.{" "}
                 {design.whole ? <>Random start r in 1..{design.k}: rows r, r+{design.k}, r+{2 * design.k}, … (start used: {sample.start}).</> : <>Start u uniform in (0, k]; rows ⌈u + j·k⌉ for j = 0..{nn - 1} (start used: {sample.start.toFixed(3)}).</>}</p>
             )}
+            <details open={idx.length <= 30}>
+              <summary>Selected row numbers ({idx.length}, in file order)</summary>
+              <p className="small" style={{ fontFamily: "ui-monospace, Menlo, monospace", lineHeight: 1.9, wordBreak: "break-word" }}>{idx.map((i) => i + 1).join(", ")}</p>
+            </details>
             {method === "stratified" && (
               <>
                 <p className="small">Proportional allocation (largest-remainder rounding, at least 1 per group, never above the group size, total = n). Within each group: simple random sample without replacement.</p>
                 <table>
                   <thead><tr><th>{strataCol}</th><th className="num">Group size</th><th className="num">Weight</th><th className="num">Allocated</th></tr></thead>
                   <tbody>{sample.strata.map((s, h) => <tr key={s.name}><td>{s.name}</td><td className="num">{s.size.toLocaleString()}</td><td className="num">{(s.size / N).toFixed(4)}</td><td className="num">{sample.alloc[h]}</td></tr>)}</tbody>
+                  <tfoot><tr><th>Total</th><th className="num">{N.toLocaleString()}</th><th className="num">{sample.strata.reduce((t, x) => t + x.size / N, 0).toFixed(4)}</th><th className="num">{sample.alloc.reduce((t, x) => t + x, 0)}</th></tr></tfoot>
                 </table>
               </>
             )}
@@ -361,7 +366,7 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName }) {
                   <div className="cell name">
                     {rowLabel === "Method" ? METHODS[r.method] : `n = ${r.n}`}
                     <span className="tag">{r.type}</span>
-                    <small>{rowLabel === "Method" ? `n = ${r.n} · ` : ""}{r.settings}</small>
+                    <small>{rowLabel === "Method" ? `n = ${r.n} · ` : ""}{r.settings} · {r.type === "exact" ? `all ${r.count} starts (no seed)` : `seed ${r.seed} · ${r.count} repetitions`}</small>
                   </div>
                   <div className="cell"><StripRow estimates={r.estimates} domain={zoom === "each" ? domainFor([r]) : shared} trueMean={r.trueMean} meanOfEstimates={r.meanOfEstimates} axis={zoom === "each"} label={`${METHODS[r.method]} n=${r.n}: ${r.count} estimates`} /></div>
                   <div className="cell num">{signed(r.bias)}</div>
@@ -552,7 +557,7 @@ function ChallengeTab() {
                 <React.Fragment key={i}>
                   <div className="cell name">
                     {METHODS[r.method]} <span className="tag" style={r.label === "modified" ? { background: "#f5ecd3", color: "#6b5314" } : undefined}>{r.label}</span> <span className="tag">{r.type}</span>
-                    <small>true mean {money(r.trueMean)} · {r.settings}</small>
+                    <small>n = {r.n} · true mean {money(r.trueMean)} · {r.settings} · {r.type === "exact" ? `all ${r.count} starts (no seed)` : `seed ${r.seed} · ${r.count} repetitions`}</small>
                   </div>
                   <div className="cell"><StripRow estimates={r.estimates} domain={zoom === "each" ? domainFor([r]) : shared} trueMean={r.trueMean} meanOfEstimates={r.meanOfEstimates} axis={zoom === "each"} label={`${METHODS[r.method]} ${r.label}: ${r.count} estimates`} /></div>
                   <div className="cell num">{signed(r.bias)}</div>

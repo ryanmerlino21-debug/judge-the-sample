@@ -159,3 +159,12 @@ test("spaceRows: 100 spaced rows at interval 13.38 on N=1338 are distinct, in ra
   assert.ok(Math.abs(S.trueMean(m.values) - S.trueMean(pop.values)) < 1e-9);
   assert.throws(() => S.spaceRows(pop, { col: "s", value: "yes", count: 100, interval: 20 }));
 });
+
+test("summarize: bias, SD and RMSE match a hand calculation (estimates 1,2,3,4; true mean 2)", () => {
+  const r = S.summarize([1, 2, 3, 4], 2);
+  assert.ok(Math.abs(r.meanOfEstimates - 2.5) < 1e-12);
+  assert.ok(Math.abs(r.bias - 0.5) < 1e-12);                 // 2.5 - 2
+  assert.ok(Math.abs(r.sd - Math.sqrt(1.25)) < 1e-12);        // divides by the number of repetitions
+  assert.ok(Math.abs(r.rmse - Math.sqrt(1.5)) < 1e-12);       // sqrt((1 + 0 + 1 + 4) / 4)
+  assert.ok(Math.abs(r.rmse ** 2 - (r.bias ** 2 + r.sd ** 2)) < 1e-12);
+});

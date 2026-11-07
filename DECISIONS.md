@@ -49,9 +49,9 @@ value for modified rows). Keep each result in its own row: never pool estimates.
 | Challenge | baseline | Systematic | random start, fractional interval k = 13.38 | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$18.63 | $947.90 | $948.08 |
 | Challenge | modified | Systematic | top 100 smoker = yes rows spaced every 13.38 rows | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$582.23 | $8,211.52 | $8,232.13 |
 | Challenge | baseline | Stratified | smoker, proportional allocation | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$22.77 | $724.44 | $724.80 |
-| Challenge | modified | Stratified | smoker, proportional allocation, modified copy | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$44.57 | $735.78 | $737.12 |
+| Challenge | modified | Stratified | smoker, proportional allocation, modified copy (top 100 smoker = yes rows spaced every 13.38 rows) | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$44.57 | $735.78 | $737.12 |
 | Challenge | baseline | Simple random | without replacement | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$16.70 | $1,171.27 | $1,171.39 |
-| Challenge | modified | Simple random | without replacement, modified copy | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$35.19 | $1,190.82 | $1,191.34 |
+| Challenge | modified | Simple random | without replacement, modified copy (top 100 smoker = yes rows spaced every 13.38 rows) | 2026 | 100 | 1,000 | Monte Carlo | $13,270.42 | +$35.19 | $1,190.82 | $1,191.34 |
 
 The simple random n = 100 row is also the n = 100 sample-size result when the population and
 settings match. If I reran it with different settings, I add a separate row. All four challenge
