@@ -269,3 +269,11 @@ export function spaceRows(pop, { col, value, count, interval }) {
 // ---------- seeds for a multi-seed check ----------
 // The first seed is the one the user is already using; the others are derived from it deterministically.
 export const seedList = (base, count) => Array.from({ length: count }, (_, j) => (base + 7919 * j) >>> 0);
+
+// ---------- shape of a set of estimates (descriptive) ----------
+export function shapeOf(estimates) {
+  const sorted = [...estimates].sort((a, b) => a - b), m = mean(estimates);
+  const sd = Math.sqrt(estimates.reduce((t, x) => t + (x - m) ** 2, 0) / estimates.length);
+  const skew = sd > 0 ? mean(estimates.map((x) => ((x - m) / sd) ** 3)) : 0;
+  return { min: sorted[0], p5: quantile(sorted, 0.05), q1: quantile(sorted, 0.25), median: quantile(sorted, 0.5), q3: quantile(sorted, 0.75), p95: quantile(sorted, 0.95), max: sorted[sorted.length - 1], skew };
+}

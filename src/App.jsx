@@ -4,6 +4,7 @@ import * as S from "./sampling.js";
 import { HowTo, MeasuresPanel, DrawMore, SideBySide, NavContext, Help, SaveBtn, Toggle, CopyLink, param, hashTab, useUrlSync, DataPreview, LimitsPanel, SiteFooter, selectionTicks, ReproduceCard, EstimateRuler, SampledPeople, Representativeness } from "./extras.jsx";
 import { getResult, setResult, useResults } from "./store.js";
 import { DataChecks } from "./integrity.jsx";
+import { PreviousRun, ShapeTable, ChallengeSummary } from "./compare.jsx";
 import { ResultsTab } from "./results.jsx";
 import { PatternContext } from "./ctx.js";
 import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
@@ -531,6 +532,7 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
             <HowTo>Each dot is the estimate from one separate sample. The black tick is the average of all the estimates in that row and the gold dashed line is the true mean. Dots spread far apart mean the estimates vary a lot from sample to sample. The numbers on the right summarise the dots in US dollars.{view === "hist" && " In histogram view, taller bars mean more estimates in that dollar range; bar heights are scaled within each row, so compare shapes and positions, not heights."}{band && " The shaded band covers the middle 90% of the estimates in each row."}</HowTo>
           </div>
           <MeasuresPanel />
+          <ShapeTable results={out.results} />
           <ReproduceCard text={`${expName} · seed ${out.seed} · ${out.reps} repetitions${needsStrata ? ` · stratify on ${out.strataCol}` : ""} · baseline population`} />
           <p className="meta">Baseline population · {population.file} · N = {N.toLocaleString()} · seed {out.seed} (exact rows need none) · repetitions {out.reps} for Monte Carlo rows; exact rows list every start (count shown in the row).
             Bias = mean of estimates − true mean; SD = spread of the estimates; RMSE = √(mean of (estimate − true mean)²).</p>
@@ -548,6 +550,7 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName, tabKey }) 
           </details>
         </>
       )}
+      {out && <PreviousRun out={out} />}
       <SeedCheck baseSeed={seed} reps={reps} name={tabKey + "-seed-check"}
         runSeed={(sd) => conditions.map((c) => S.repeatedResult({ ...c, pop: population, reps, seed: sd, strataCol }))}
         rowLabel={(r) => (rowLabel === "Method" ? `${METHODS[r.method]} (n = ${r.n})` : `Simple random, n = ${r.n}`)} />
@@ -708,6 +711,7 @@ function ChallengeTab() {
       {out && (
         <section className="block">
           <h2>Results at n = {out.n}</h2>
+          <ChallengeSummary out={out} />
           <p className="sub">Each row is one condition on its own, measured against the true mean of the population it was drawn from. Baseline and modified results are shown together but never pooled.</p>
           <div className="chart">
             <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
@@ -747,6 +751,7 @@ function ChallengeTab() {
             <HowTo>Each row is one condition: a method on the baseline or on the modified copy. Each dot is the estimate from one separate sample, the black tick is the average of the estimates, and the gold dashed line is the true mean of that row's own population. The numbers on the right summarise the dots in US dollars.{view === "hist" && " In histogram view, taller bars mean more estimates in that dollar range; bar heights are scaled within each row, so compare shapes and positions, not heights."}{band && " The shaded band covers the middle 90% of the estimates in each row."}</HowTo>
           </div>
           <MeasuresPanel />
+          <ShapeTable results={out.results} />
           <ReproduceCard text={`Challenge · n = ${out.n} · seed ${out.seed} · ${out.reps} repetitions · stratify on ${out.strataCol} · modified copy: top ${out.count} ${out.col} = ${out.value} rows spaced every ${out.k.toFixed(2)} rows`} />
 
           <h3 style={{ marginTop: 18 }}>Ratios and differences (arithmetic from the table above)</h3>
@@ -770,6 +775,7 @@ function ChallengeTab() {
           </div>
         </section>
       )}
+      {out && <PreviousRun out={out} getLabelSettings={(o) => `modified: top ${o.count} ${o.col} = ${o.value}, spacing ${o.k.toFixed(2)}, n = ${o.n}`} />}
       <SeedCheck baseSeed={seed} reps={reps} name="challenge-seed-check" disabled={!built.mod}
         runSeed={(sd) => {
           const out2 = [];

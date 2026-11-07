@@ -206,3 +206,11 @@ test("ledger: rows match the DECISIONS.md table columns, exact rows have no seed
   assert.ok(cells(rows[3])[3].includes("top 5 g = a rows spaced every 6.00 rows"));
   assert.ok(!cells(rows[2])[3].includes("top 5"));
 });
+
+test("shapeOf: percentiles and skewness on known data", () => {
+  const sh = S.shapeOf(Array.from({ length: 101 }, (_, i) => i));
+  assert.equal(sh.min, 0); assert.equal(sh.max, 100); assert.equal(sh.median, 50); assert.equal(sh.p5, 5); assert.equal(sh.p95, 95); assert.equal(sh.q1, 25); assert.equal(sh.q3, 75);
+  assert.ok(Math.abs(sh.skew) < 1e-9);                       // symmetric data
+  assert.ok(S.shapeOf([1, 1, 1, 1, 1, 1, 1, 1, 1, 50]).skew > 1);   // long right tail
+  assert.equal(S.shapeOf([5, 5, 5]).skew, 0);                // no spread: defined as 0, not NaN
+});

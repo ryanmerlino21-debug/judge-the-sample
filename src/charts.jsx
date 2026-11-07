@@ -284,7 +284,7 @@ export function StripRow({ estimates, domain, trueMean, meanOfEstimates, axis, l
   const [lo, hi] = domain;
   const x = (v) => L + ((v - lo) / (hi - lo || 1)) * (W - L - R);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}. Mean of the estimates ${money0(meanOfEstimates)}; true mean ${money0(trueMean)}; range ${money0(Math.min(...estimates))} to ${money0(Math.max(...estimates))}.`}>
       {band && <rect x={x(band[0])} y="2" width={Math.max(x(band[1]) - x(band[0]), 1)} height={lane - 4} rx="3" style={fill("var(--accent)")} opacity="0.12"><title>{`Middle 90% of the estimates: ${money0(band[0])} to ${money0(band[1])}`}</title></rect>}
       <line x1={L} x2={W - R} y1={lane / 2} y2={lane / 2} strokeWidth="1" style={stroke("var(--grid)")} />
       <line x1={x(trueMean)} x2={x(trueMean)} y1={2} y2={lane - 2} strokeWidth="2" strokeDasharray="4 3" style={stroke("var(--truec)")} />
@@ -318,7 +318,7 @@ export function HistRow({ estimates, domain, trueMean, meanOfEstimates, axis, la
   estimates.forEach((e) => { c[Math.min(bins - 1, Math.max(0, Math.floor((e - lo) / w)))]++; });
   const max = Math.max(...c, 1);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}. Mean of the estimates ${money0(meanOfEstimates)}; true mean ${money0(trueMean)}; range ${money0(Math.min(...estimates))} to ${money0(Math.max(...estimates))}.`}>
       {band && <rect x={x(band[0])} y="2" width={Math.max(x(band[1]) - x(band[0]), 1)} height={lane - 4} rx="3" style={fill("var(--accent)")} opacity="0.12"><title>{`Middle 90% of the estimates: ${money0(band[0])} to ${money0(band[1])}`}</title></rect>}
       {c.map((n, b) => n > 0 && (
         <rect key={b} x={L + b * bw + 0.5} width={Math.max(bw - 1, 0.5)} y={lane - 4 - (n / max) * (lane - 12)} height={(n / max) * (lane - 12)} rx="1.5" style={fill(ACCENT)} opacity="0.55">

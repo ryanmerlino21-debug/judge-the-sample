@@ -210,3 +210,7 @@ nav.tabs .done { color: var(--s3); font-weight: 700; }
 @media print { .pager, .bn-tools { display: none !important; } }
 .chart > svg:first-of-type { margin-top: 18px; }
 .chart.groups > svg:first-of-type { margin-top: 0; }
+
+/* ---- round B ---- */
+.callout b { color: var(--ink); } .callout code { background: transparent; padding: 0; }
+@media print { .pager, .bn-tools, nav.tabs, .toolbar, .toggle, .opts, .savebtn, button.help { display: none !important; } details[open] > summary { font-weight: 700; } body { font-size: 11.5pt; } h2 { break-after: avoid; } }
