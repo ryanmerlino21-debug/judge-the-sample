@@ -36,7 +36,7 @@ export function DisplayMenu({ theme, setTheme, big, setBig, patterns, setPattern
       <div className="menupop">
         {row("Dark mode", "Easier on the eyes in low light", theme === "dark", (v) => setTheme(v ? "dark" : "light"))}
         {row("Larger text", "Bigger type throughout", big, setBig)}
-        {row("Patterns", "Textures as well as colours", patterns, setPatterns)}
+        {row("Patterns", "Textures as well as colors", patterns, setPatterns)}
         <button type="button" className="mrow" onClick={() => { onTour(); if (ref.current) ref.current.open = false; }}><span><b>Take a guided tour</b><small>Six short steps</small></span><span aria-hidden="true">›</span></button>
       </div>
     </details>

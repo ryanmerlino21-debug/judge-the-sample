@@ -7,7 +7,7 @@ import { HowTo, Toggle } from "./extras.jsx";
 const N = population.values.length;
 const order = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
 
-// Average charge for every combination of two group columns, as a coloured grid.
+// Average charge for every combination of two group columns, as a colored grid.
 export function HeatMap() {
   const [rowCol, setRowCol] = useState("smoker");
   const [colCol, setColCol] = useState("age_band");

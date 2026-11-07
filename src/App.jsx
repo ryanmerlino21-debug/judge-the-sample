@@ -67,7 +67,7 @@ function PopulationTab() {
 
       <section className="block">
         <h2>How the 1,338 people split into groups</h2>
-        <p className="sub">Each bar is the whole file; each coloured piece is one group. Stratified sampling uses one of these columns.</p>
+        <p className="sub">Each bar is the whole file; each colored piece is one group. Stratified sampling uses one of these columns.</p>
         <div className="opts"><Toggle label="Show as" value={splitView} onChange={setSplitView} options={[["split", "Split bar (share of the file)"], ["counts", "Count bars (number of people)"]]} /></div>
         <div className="chart groups">
           <SaveBtn name="group-splits" />
@@ -104,14 +104,14 @@ function PopulationTab() {
         <p className="sub">Every person is a dot. This describes the file only; it does not say how any sampling method will behave.</p>
         <div className="opts">
           <Toggle label="Horizontal axis" value={sx} onChange={setSx} options={[["age", "Age"], ["bmi", "BMI"]]} />
-          <label className="inl">Colour by <select value={scol} onChange={(e) => setScol(e.target.value)} style={{ font: "inherit", padding: "4px 6px", borderRadius: 6 }}><option value="none">nothing</option>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select></label>
+          <label className="inl">Color by <select value={scol} onChange={(e) => setScol(e.target.value)} style={{ font: "inherit", padding: "4px 6px", borderRadius: 6 }}><option value="none">nothing</option>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select></label>
         </div>
         <div className="chart">
           <SaveBtn name={"charges-by-" + sx} />
           <ScatterByColumn xs={sx === "age" ? population.ages : population.bmi} ys={population.values} top={TOP} xLabel={sx === "age" ? "age (years)" : "BMI (kg/m²)"}
             groups={scol === "none" ? null : population.groups[scol]} colors={scol === "none" ? {} : Object.fromEntries(groupCounts[scol].map(([g], i) => [g, SLOTS[i % SLOTS.length]]))} />
           {scol !== "none" && <div className="legend">{groupCounts[scol].map(([g], i) => <span key={g}><span className="sw" style={{ background: SLOTS[i % SLOTS.length] }} />{g}</span>)}</div>}
-          <HowTo>Each dot is one person. Higher means higher charges. {scol === "none" ? "Choose a column above to colour the dots by group." : `Dots are coloured by ${scol}, so you can see whether the groups sit in different places.`}</HowTo>
+          <HowTo>Each dot is one person. Higher means higher charges. {scol === "none" ? "Choose a column above to color the dots by group." : `Dots are colored by ${scol}, so you can see whether the groups sit in different places.`}</HowTo>
         </div>
       </section>
 
@@ -128,7 +128,7 @@ function PopulationTab() {
           <GroupBoxes rows={groupRows} top={TOP} trueMean={TRUE_MEAN} mode={gmode} />
           <HowTo>{gmode === "box"
             ? <>One row per group. The shaded box covers the middle half of that group's charges, the dark line is the median and the gold diamond is the mean. The thin line reaches the typical extremes. The gold dashed line is the true mean of the whole file.</>
-            : <>One row per group. The coloured bar ends at that group's mean charges and the dark line marks its median. The gold dashed line is the true mean of the whole file.</>} This describes the file only.</HowTo>
+            : <>One row per group. The colored bar ends at that group's mean charges and the dark line marks its median. The gold dashed line is the true mean of the whole file.</>} This describes the file only.</HowTo>
         </div>
         <details>
           <summary>Charges by group (mean, median and size of each group)</summary>
@@ -245,7 +245,7 @@ function ExploreTab() {
     catch (e) { return { error: e.message }; }
   }, [method, nn, seed, strataCol]);
 
-  // Colour by the chosen column; with selection markers on, a stratified sample is coloured by its strata.
+  // Color by the chosen column; with selection markers on, a stratified sample is colored by its strata.
   const effCol = colorBy !== "none" ? colorBy : (markers && method === "stratified" ? strataCol : "none");
   const names = effCol === "none" ? [] : groupCounts[effCol].map(([g]) => g);
   const colors = Object.fromEntries(names.map((g, i) => [g, SLOTS[i % SLOTS.length]]));
@@ -294,7 +294,7 @@ function ExploreTab() {
             <select value={strataCol} onChange={(e) => setStrataCol(e.target.value)}>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select>
           </label>
         )}
-        <label>Colour people by
+        <label>Color people by
           <select value={colorBy} onChange={(e) => setColorBy(e.target.value)}>
             <option value="none">nothing</option>
             {GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}
@@ -304,7 +304,7 @@ function ExploreTab() {
         <button type="button" className="btn ghost" onClick={() => { setMethod("srs"); setN(100); setSeed(2026); setStrataCol("smoker"); setColorBy("none"); setView("bars"); setMarkers(true); setBinW(2500); setShareMode("pair"); }}>Reset to defaults</button>
       </div>
       {String(n) !== String(nn) && <p className="note" role="status">n was adjusted to {nn}: the sample size must be a whole number from 1 to {N.toLocaleString()}.</p>}
-      <p className="hint"><b>n</b> is how many people are in one sample. The <b>seed</b> fixes the random choices, so the same seed and settings always give the same sample. <b>Colour people by</b> shows a column on the bars.</p>
+      <p className="hint"><b>n</b> is how many people are in one sample. The <b>seed</b> fixes the random choices, so the same seed and settings always give the same sample. <b>Color people by</b> shows a column on the bars.</p>
 
       {!error && sample && (
         <div className="status" role="status" aria-label="Current sample">
@@ -338,17 +338,17 @@ function ExploreTab() {
 
           <section className="block">
             <h2>Who is in the sample?</h2>
-            <p className="sub">Every bar is one person, in file order; bar height is <code>{TARGET}</code>. The {idx.length} sampled people are the coloured bars.
+            <p className="sub">Every bar is one person, in file order; bar height is <code>{TARGET}</code>. The {idx.length} sampled people are the colored bars.
               {method === "systematic" && " The file order has no documented meaning (it is not a time sequence), so stepping through it means something different from sampling a chronological record."}</p>
             <div className="opts">
               <Toggle label="View" value={view} onChange={setView} options={[["bars", "Bars, file order"], ["dots", "Dots, file order"], ["sorted", "Sorted by charges"]]} />
               <button type="button" className="btn ghost" onClick={startReplay} disabled={replayK != null}>{replayK != null ? "Replaying…" : "Replay the selection"}</button>
-              {method !== "srs" && <label className="inl"><input type="checkbox" checked={markers} onChange={(e) => setMarkers(e.target.checked)} /> Show selection markers {method === "systematic" ? "(interval ticks and the random start)" : "(colour by stratum)"}</label>}
+              {method !== "srs" && <label className="inl"><input type="checkbox" checked={markers} onChange={(e) => setMarkers(e.target.checked)} /> Show selection markers {method === "systematic" ? "(interval ticks and the random start)" : "(color by stratum)"}</label>}
             </div>
             <div className="chart">
               <SaveBtn name="who-is-in-the-sample" />
               <RowBars values={population.values} sampled={shownIdx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={shownEst} view={view} ticks={markers && replayK == null ? selectionTicks(sample, nn) : null} />
-              <HowTo>{view === "dots" ? "Each dot is one person, in the order they appear in the file; higher means higher charges." : view === "sorted" ? "Each bar is one person, lined up from the lowest to the highest charges, so you can see where the sample's people fall in the overall spread." : "Each bar is one person, in the order they appear in the file; taller means higher charges."} Coloured marks are the people in this sample. The gold dashed line is the true mean of everyone and the dark line is the mean of this one sample.{view === "bars" && markers && method === "systematic" ? " Small ticks under the axis mark the selected rows and the triangle marks the random start (shown when n is 150 or less)." : ""}</HowTo>
+              <HowTo>{view === "dots" ? "Each dot is one person, in the order they appear in the file; higher means higher charges." : view === "sorted" ? "Each bar is one person, lined up from the lowest to the highest charges, so you can see where the sample's people fall in the overall spread." : "Each bar is one person, in the order they appear in the file; taller means higher charges."} Colored marks are the people in this sample. The gold dashed line is the true mean of everyone and the dark line is the mean of this one sample.{view === "bars" && markers && method === "systematic" ? " Small ticks under the axis mark the selected rows and the triangle marks the random start (shown when n is 150 or less)." : ""}</HowTo>
               <div className="legend">
                 <span><span className="sw sq" style={{ background: "var(--pop)" }} />not sampled</span>
                 <span><span className="key dash" /> true mean (all people)</span>
@@ -373,12 +373,12 @@ function ExploreTab() {
           {groupOf && (
             <section className="block">
               <h2>Does the sample mirror the population? <code>{effCol}</code></h2>
-              <p className="sub">{shareMode === "pair" ? "Share of people in each group: population (grey) versus this sample (colour)." : "How far each group's share of this sample is from its share of the population."}</p>
+              <p className="sub">{shareMode === "pair" ? "Share of people in each group: population (grey) versus this sample (color)." : "How far each group's share of this sample is from its share of the population."}</p>
               <div className="opts"><Toggle label="Show" value={shareMode} onChange={setShareMode} options={[["pair", "Both shares"], ["diff", "Difference"]]} /></div>
               <div className="chart">
                 <SaveBtn name="group-share" />
                 <ShareBars rows={shareRows} mode={shareMode} />
-                <HowTo>{shareMode === "pair" ? "For each group, the grey bar is that group's share of the whole file and the coloured bar is its share of this sample (the number of sampled people is in brackets)." : "For each group the bar shows the sample's share minus the population's share, in percentage points. A bar at zero means the sample matches the population for that group."}</HowTo>
+                <HowTo>{shareMode === "pair" ? "For each group, the grey bar is that group's share of the whole file and the colored bar is its share of this sample (the number of sampled people is in brackets)." : "For each group the bar shows the sample's share minus the population's share, in percentage points. A bar at zero means the sample matches the population for that group."}</HowTo>
                 <details>
                   <summary>View as table</summary>
                   <table>
@@ -420,7 +420,7 @@ function ExploreTab() {
                 <div className="chart" style={{ marginTop: 14 }}>
                   <SaveBtn name="stratified-allocation" />
                   <ShareBars rows={allocRows} />
-                  <HowTo>One pair of bars per group in <code>{strataCol}</code>. The grey bar is the group's share of the whole file and the coloured bar is its share of the {nn} people allocated to this sample; the number in brackets is how many people that is.</HowTo>
+                  <HowTo>One pair of bars per group in <code>{strataCol}</code>. The grey bar is the group's share of the whole file and the colored bar is its share of the {nn} people allocated to this sample; the number in brackets is how many people that is.</HowTo>
                 </div>
               </>
             )}
@@ -709,7 +709,7 @@ function ChallengeTab() {
       {built.error ? <div className="err"><b>Can't build the modified copy.</b> {built.error}</div> : (
         <section className="block">
           <h2>The modified copy <span className="tag gold">Modified population</span></h2>
-          <p className="sub">Only row order changes. Coloured bars are the {Number(count)} highest-charge rows with {col} = {value}, placed at positions round(1 + j × {k.toFixed(2)}), j = 0, 1, 2, …, in their original relative order among themselves. All other rows keep their original relative order.</p>
+          <p className="sub">Only row order changes. Colored bars are the {Number(count)} highest-charge rows with {col} = {value}, placed at positions round(1 + j × {k.toFixed(2)}), j = 0, 1, 2, …, in their original relative order among themselves. All other rows keep their original relative order.</p>
           <div className="opts"><Toggle label="Show" value={copyShow} onChange={setCopyShow} options={[["both", "Original and modified"], ["copy", "Modified copy only"], ["orig", "Original order only"]]} /><Toggle label="View" value={copyView} onChange={setCopyView} options={[["bars", "Bars"], ["dots", "Dots"], ["sorted", "Sorted"]]} /></div>
           <div className="chart">
             <SaveBtn name="modified-copy" />
@@ -725,7 +725,7 @@ function ChallengeTab() {
                 <RowBars values={built.mod.values} sampled={built.mod.movedPositions} colorOf={() => ACCENT} groupOf={built.mod.groups[col]} trueMean={S.trueMean(built.mod.values)} est={null} view={copyView} />
               </>
             )}
-            <HowTo>Same layout as the Explore chart, drawn for the modified copy: {copyView === "dots" ? "one dot per person in the copy's file order" : copyView === "sorted" ? "one bar per person, sorted from the lowest to the highest charges" : "one bar per person in the copy's file order"}. Coloured marks are the rows that were moved; the gold dashed line is the true mean of the copy.</HowTo>
+            <HowTo>Same layout as the Explore chart, drawn for the modified copy: {copyView === "dots" ? "one dot per person in the copy's file order" : copyView === "sorted" ? "one bar per person, sorted from the lowest to the highest charges" : "one bar per person in the copy's file order"}. Colored marks are the rows that were moved; the gold dashed line is the true mean of the copy.</HowTo>
             <div className="legend">
               <span><span className="sw sq" style={{ background: "var(--pop)" }} />other rows (original relative order)</span>
               <span><span className="sw sq" style={{ background: ACCENT }} />spaced-out rows</span>

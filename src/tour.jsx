@@ -3,7 +3,7 @@ import { NavContext } from "./ctx.js";
 
 const STEPS = [
   { tab: "explore", title: "Pick a method and a sample size", body: "Use the toolbar at the top of Explore a sample. The seed fixes the random choices, so the same seed and settings always give the same sample." },
-  { tab: "explore", title: "See who was picked", body: "Each bar is one person in file order. The coloured bars are the people in this sample. The gold dashed line is the true mean of everyone; the dark line is this sample's mean." },
+  { tab: "explore", title: "See who was picked", body: "Each bar is one person in file order. The colored bars are the people in this sample. The gold dashed line is the true mean of everyone; the dark line is this sample's mean." },
   { tab: "explore", title: "Look at how the estimate was made", body: "Further down, the walkthrough shows the real numbers behind the estimate, and 'Draw more samples' lets you watch many estimates build up against the true mean." },
   { tab: "methods", title: "Run an experiment", body: "Experiment A repeats each method many times at n = 100. Each dot is one sample's estimate. Bias, SD and RMSE summarise the dots." },
   { tab: "challenge", title: "Test a change to the row order", body: "The Challenge tab builds a labelled modified copy of the file and compares results on the baseline and the copy, each against its own true mean." },

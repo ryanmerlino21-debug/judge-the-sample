@@ -63,7 +63,7 @@ function RefLines({ x, tx, ex, y0, y1 }) {
   );
 }
 
-// ---- 1. Every person as a bar, in file order. Sampled people are thick, dotted and coloured.
+// ---- 1. Every person as a bar, in file order. Sampled people are thick, dotted and colored.
 // view: "bars" (default) | "dots" (one dot per person) | "sorted" (people ordered from lowest to highest charges).
 // ticks: optional { rows: [1-based row numbers], start } shown under the axis for systematic sampling.
 export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est, view = "bars", ticks = null }) {
@@ -96,9 +96,9 @@ export function RowBars({ values, sampled, colorOf, groupOf, trueMean, est, view
   for (let i = 1; i < ly.length; i++) if (ly[i] - ly[i - 1] < 40) ly[i] = ly[i - 1] + 40;
   const xAxisText = view === "sorted" ? "each bar = one person, sorted from lowest to highest charges →" : view === "dots" ? "each dot = one person, in file order →" : "each bar = one person, in file order →";
   const leftText = view === "sorted" ? "lowest" : "row 1", rightText = view === "sorted" ? "highest" : `row ${N.toLocaleString()}`;
-  const aria = view === "dots" ? "One dot per person in file order; height is charges; sampled people are large coloured dots"
-    : view === "sorted" ? "One bar per person sorted from lowest to highest charges; sampled people are thick coloured bars with a dot on top"
-    : "One bar per person in file order; bar height is charges; sampled people are thick coloured bars with a dot on top";
+  const aria = view === "dots" ? "One dot per person in file order; height is charges; sampled people are large colored dots"
+    : view === "sorted" ? "One bar per person sorted from lowest to highest charges; sampled people are thick colored bars with a dot on top"
+    : "One bar per person in file order; bar height is charges; sampled people are thick colored bars with a dot on top";
   const hvText = hv == null ? "" : `Row ${hv + 1} · ${money0(values[hv])}${groupOf ? " · " + groupOf[hv] : ""}${sel.has(hv) ? " · in the sample" : ""}`;
   const hvW = hvText.length * 6.6 + 18, hvX = hv == null ? 0 : Math.min(Math.max(L + (pos(hv) + 0.5) * bw - hvW / 2, L), W - R - hvW);
   return (
@@ -524,7 +524,7 @@ function LogHistogram({ values, trueMean, median, top }) {
   );
 }
 
-// Every person as a dot: x = age or BMI, y = charges, coloured by a group column.
+// Every person as a dot: x = age or BMI, y = charges, colored by a group column.
 export function ScatterByColumn({ xs, ys, groups, colors, xLabel, top }) {
   const F = useFill();
   const W = 900, H = 340, L = 56, R = 16, T = 14, B = 44;

@@ -242,7 +242,7 @@ export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean
           ? <>Each dot is the estimate from one separate sample of {n} {n === 1 ? "person" : "people"}. The black tick is the average of the dots so far and the gold dashed line is the true mean of everyone. Dots far apart mean the estimates vary a lot from sample to sample.</>
           : view === "running"
           ? <>The line shows the average of all the estimates drawn so far, after each new draw. The gold dashed line is the true mean of everyone. Early on the line moves a lot because it rests on few draws.</>
-          : <>Each square is one person, in file order, in one of three colours. Grey: never picked in the {draws.length} {draws.length === 1 ? "draw" : "draws"} so far. Blue: picked, but no more often than expected. Orange: picked more often than expected. Expected is the average number of times a person is picked: {draws.length} × {n} ÷ {N.toLocaleString()} = {((draws.length * n) / N).toFixed(2)}, rounded up. With few draws the pattern is mostly chance, and every draw picks {n} {n === 1 ? "person" : "people"}.</>}</HowTo>
+          : <>Each square is one person, in file order, in one of three colors. Grey: never picked in the {draws.length} {draws.length === 1 ? "draw" : "draws"} so far. Blue: picked, but no more often than expected. Orange: picked more often than expected. Expected is the average number of times a person is picked: {draws.length} × {n} ÷ {N.toLocaleString()} = {((draws.length * n) / N).toFixed(2)}, rounded up. With few draws the pattern is mostly chance, and every draw picks {n} {n === 1 ? "person" : "people"}.</>}</HowTo>
         <p className="meta">
           <b>{draws.length}</b> {draws.length === 1 ? "sample" : "samples"} drawn · {METHOD_NAMES[method]}{method === "stratified" ? ` on ${strataCol}` : ""} · n = {n} · seed {seed} (draw 1 uses this seed; later draws use seeds derived from it, so the same clicks give the same dots)
           {draws.length > 1 && <> · mean of the estimates {money(m)} · SD of the estimates {money(sd)} · range {money0(Math.min(...draws))} to {money0(Math.max(...draws))}</>}
@@ -309,7 +309,7 @@ export function SideBySide({ methodA, n, seed, strataCol, sampleA, view = "bars"
         <>
           {card(`A · ${METHOD_NAMES[methodA]}`, sampleA, ACCENT)}
           {card(`B · ${METHOD_NAMES[methodB]}`, b.sample, "var(--s2)")}
-          <HowTo>Each chart has one {view === "dots" ? "dot" : "bar"} per person{view === "sorted" ? ", sorted from lowest to highest charges" : ", in file order"}, as on the chart above. Coloured marks are the people that method picked. The two lines mark the true mean of everyone and that sample's mean.</HowTo>
+          <HowTo>Each chart has one {view === "dots" ? "dot" : "bar"} per person{view === "sorted" ? ", sorted from lowest to highest charges" : ", in file order"}, as on the chart above. Colored marks are the people that method picked. The two lines mark the true mean of everyone and that sample's mean.</HowTo>
           <p className="meta">
             <b>{overlap}</b> {overlap === 1 ? "person was" : "people were"} picked by both methods ({((100 * overlap) / n).toFixed(1)}% of n = {n}). Baseline population · N = {N.toLocaleString()} · n = {n} · seed {seed}. These are two single samples, not repeated results.
           </p>
@@ -483,7 +483,7 @@ export function Representativeness({ indices }) {
   return (
     <details>
       <summary>Compare this sample with the population on every column</summary>
-      <p className="small muted">Descriptive only: how the {n} sampled people compare with all {N.toLocaleString()} people on each column, not just the one you coloured by.</p>
+      <p className="small muted">Descriptive only: how the {n} sampled people compare with all {N.toLocaleString()} people on each column, not just the one you colored by.</p>
       <div style={{ overflowX: "auto" }}>
         <table>
           <thead><tr><th>Column</th><th className="num">Population</th><th className="num">This sample</th><th className="num">Difference</th></tr></thead>
