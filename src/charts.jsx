@@ -187,7 +187,7 @@ export function ShareBars({ rows }) {
 
 // ---- 4. One row of an experiment: every estimate as a dot (strip plot).
 const jit = (i) => (Math.imul(i + 1, 2654435761) >>> 0) / 4294967296;
-export function StripRow({ estimates, domain, trueMean, meanOfEstimates, axis, label }) {
+export function StripRow({ estimates, domain, trueMean, meanOfEstimates, axis, label, tickSize = 15 }) {
   const W = 600, L = 8, R = 8, lane = 62, H = lane + (axis ? 24 : 0);
   const [lo, hi] = domain;
   const x = (v) => L + ((v - lo) / (hi - lo || 1)) * (W - L - R);
@@ -207,7 +207,7 @@ export function StripRow({ estimates, domain, trueMean, meanOfEstimates, axis, l
         <g>
           <line x1={L} x2={W - R} y1={lane + 2} y2={lane + 2} strokeWidth="1" style={stroke("var(--axis)")} />
           {niceTicks(lo, hi, 5).map((t) => (
-            <text key={t} x={x(t)} y={lane + 19} fontSize="15" textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>
+            <text key={t} x={x(t)} y={lane + 19} fontSize={tickSize} textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>
           ))}
         </g>
       )}

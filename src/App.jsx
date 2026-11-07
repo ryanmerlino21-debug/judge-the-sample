@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { population, TARGET, GROUP_COLUMNS } from "./data.js";
 import * as S from "./sampling.js";
+import { HowTo, MeasuresPanel, DrawMore, SideBySide } from "./extras.jsx";
 import { DistributionPair, RowBars, SegBar, ShareBars, SimpleHistogram, StripRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
@@ -218,6 +219,7 @@ function ExploreTab() {
               {method === "systematic" && " The file order has no documented meaning (it is not a time sequence), so stepping through it means something different from sampling a chronological record."}</p>
             <div className="chart">
               <RowBars values={population.values} sampled={idx} colorOf={colorOf} groupOf={groupOf} trueMean={TRUE_MEAN} est={sample.estimate} />
+              <HowTo>Each bar is one person, in the order they appear in the file; taller means higher charges. Coloured bars with a dot on top are the people in this sample. The gold dashed line is the true mean of everyone and the dark line is the mean of this one sample.</HowTo>
               <div className="legend">
                 <span><span className="sw sq" style={{ background: "var(--pop)" }} />not sampled</span>
                 <span><span className="key dash" /> true mean (all people)</span>
@@ -232,6 +234,7 @@ function ExploreTab() {
             <p className="sub">Same horizontal scale in both panels.</p>
             <div className="chart">
               <DistributionPair values={population.values} sampled={idx} groupOf={groupOf} groupNames={names} colors={colors} trueMean={TRUE_MEAN} est={sample.estimate} top={TOP} />
+              <HowTo>The top panel shows how everyone's charges are spread out; the bottom panel shows the sampled people on the same dollar scale. Taller bars mean more people in that dollar range. The two vertical lines mark the true mean and this sample's mean.</HowTo>
               {groupOf && <div className="legend">{names.map((g) => <span key={g}><span className="sw sq" style={{ background: colors[g] }} />{g}</span>)}</div>}
             </div>
           </section>
@@ -242,6 +245,7 @@ function ExploreTab() {
               <p className="sub">Share of people in each group: population (grey) versus this sample (colour).</p>
               <div className="chart">
                 <ShareBars rows={shareRows} />
+                <HowTo>For each group, the grey bar is that group's share of the whole file and the coloured bar is its share of this sample.</HowTo>
                 <details>
                   <summary>View as table</summary>
                   <table>
@@ -252,6 +256,10 @@ function ExploreTab() {
               </div>
             </section>
           )}
+
+          <DrawMore method={method} n={nn} seed={seed} strataCol={strataCol} first={sample.estimate} trueMean={TRUE_MEAN} />
+
+          <SideBySide methodA={method} n={nn} seed={seed} strataCol={strataCol} sampleA={sample} />
 
           <section className="block">
             <h2>How this sample was chosen</h2>
@@ -378,7 +386,9 @@ function ExperimentTab({ title, intro, conditions, rowLabel, expName }) {
             {zoom === "shared" && (
               <div className="strip-grid"><div /><StripAxis domain={shared} /><div /><div /><div /></div>
             )}
+            <HowTo>Each dot is the estimate from one separate sample. The black tick is the average of all the estimates in that row and the gold dashed line is the true mean. Dots spread far apart mean the estimates vary a lot from sample to sample. The numbers on the right summarise the dots in US dollars.</HowTo>
           </div>
+          <MeasuresPanel />
           <p className="meta">Baseline population · {population.file} · N = {N.toLocaleString()} · seed {out.seed} (exact rows need none) · repetitions {out.reps} for Monte Carlo rows; exact rows list every start (count shown in the row).
             Bias = mean of estimates − true mean; SD = spread of the estimates; RMSE = √(mean of (estimate − true mean)²).</p>
           <p className="note">100 repetitions usually reveal the main pattern; 1,000 give smoother distributions and more stable bias, SD and RMSE. Neither guarantees stable results, and 100 repetitions cannot reliably separate small differences between methods: rerun with different seeds to check. Systematic sampling with a whole-number interval uses exact enumeration, so it ignores the seed and repetitions.</p>
@@ -517,6 +527,7 @@ function ChallengeTab() {
           <p className="sub">Only row order changes. Coloured bars are the {Number(count)} highest-charge rows with {col} = {value}, placed at positions round(1 + j × {k.toFixed(2)}), j = 0, 1, 2, …, in their original relative order among themselves. All other rows keep their original relative order.</p>
           <div className="chart">
             <RowBars values={built.mod.values} sampled={built.mod.movedPositions} colorOf={() => ACCENT} groupOf={built.mod.groups[col]} trueMean={S.trueMean(built.mod.values)} est={null} />
+            <HowTo>Same layout as the Explore chart, drawn for the modified copy: one bar per person in the copy's file order. Coloured bars are the rows that were moved; the gold dashed line is the true mean of the copy.</HowTo>
             <div className="legend">
               <span><span className="sw sq" style={{ background: "var(--pop)" }} />other rows (original relative order)</span>
               <span><span className="sw sq" style={{ background: ACCENT }} />spaced-out rows</span>
@@ -567,7 +578,9 @@ function ChallengeTab() {
               ))}
             </div>
             {zoom === "shared" && <div className="strip-grid"><div /><StripAxis domain={shared} /><div /><div /><div /></div>}
+            <HowTo>Each row is one condition: a method on the baseline or on the modified copy. Each dot is the estimate from one separate sample, the black tick is the average of the estimates, and the gold dashed line is the true mean of that row's own population. The numbers on the right summarise the dots in US dollars.</HowTo>
           </div>
+          <MeasuresPanel />
 
           <h3 style={{ marginTop: 18 }}>Ratios and differences (arithmetic from the table above)</h3>
           <table>
