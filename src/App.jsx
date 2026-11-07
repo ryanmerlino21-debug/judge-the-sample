@@ -7,7 +7,7 @@ import { ResultsTab } from "./results.jsx";
 import { PatternContext } from "./ctx.js";
 import { SeedCheck, SampleSizeCurve } from "./seedcheck.jsx";
 import { StartHere, Walkthrough, GuideTab } from "./guide.jsx";
-import { DistributionPair, RowBars, SegBar, CountBars, GroupBoxes, ShareBars, SimpleHistogram, StripRow, HistRow, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
+import { DistributionPair, RowBars, SegBar, CountBars, GroupBoxes, ShareBars, SimpleHistogram, StripRow, HistRow, ScatterByColumn, SLOTS, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
 const TRUE_MEAN = S.trueMean(population.values);
@@ -23,6 +23,9 @@ function PopulationTab() {
   const [splitView, setSplitView] = useState("split");
   const [binW, setBinW] = useState(2500);
   const [showMedian, setShowMedian] = useState(false);
+  const [logScale, setLogScale] = useState(false);
+  const [sx, setSx] = useState("age");
+  const [scol, setScol] = useState("smoker");
   const [gcol, setGcol] = useState("smoker");
   const [gmode, setGmode] = useState("box");
   const groupRows = useMemo(() => S.strataOf(population.groups[gcol]).sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true })).map((g, i) => {
@@ -77,13 +80,30 @@ function PopulationTab() {
 
       <section className="block">
         <h2>What the charges look like</h2>
-        <p className="sub">Each bar counts people whose charges fall in that {money0(binW)} band. The dashed line is the true mean of the whole file.</p>
+        <p className="sub">{logScale ? "Each bar counts people whose charges fall in that multiplicative band of dollars. The dashed line is the true mean of the whole file." : `Each bar counts people whose charges fall in that ${money0(binW)} band. The dashed line is the true mean of the whole file.`}</p>
         <div className="opts">
-          <Toggle label="Bin width" value={binW} onChange={setBinW} options={[[1000, "$1,000"], [2500, "$2,500"], [5000, "$5,000"]]} />
+          <Toggle label="Horizontal axis" value={logScale ? "log" : "lin"} onChange={(v) => setLogScale(v === "log")} options={[["lin", "Dollars"], ["log", "Log scale"]]} />
+          {!logScale && <Toggle label="Bin width" value={binW} onChange={setBinW} options={[[1000, "$1,000"], [2500, "$2,500"], [5000, "$5,000"]]} />}
           <label className="inl"><input type="checkbox" checked={showMedian} onChange={(e) => setShowMedian(e.target.checked)} /> Also show the median</label>
         </div>
-        <div className="chart"><SaveBtn name="charges-histogram" /><SimpleHistogram values={population.values} trueMean={TRUE_MEAN} top={TOP} binWidth={binW} median={showMedian ? POP_STATS.median : null} />
-          <HowTo>Each bar counts the people whose charges fall in that dollar range, so taller bars mean more people. The dashed gold line is the true mean of everyone{showMedian ? "; the dark line is the median, the charge that splits the people in half" : ""}.</HowTo></div>
+        <div className="chart"><SaveBtn name="charges-histogram" /><SimpleHistogram values={population.values} trueMean={TRUE_MEAN} top={TOP} binWidth={binW} median={showMedian ? POP_STATS.median : null} logScale={logScale} />
+          <HowTo>{logScale ? "Each step to the right multiplies the charge instead of adding to it, which spreads out the many small charges so the whole shape is visible. " : ""}Each bar counts the people whose charges fall in that dollar range, so taller bars mean more people. The dashed gold line is the true mean of everyone{showMedian ? "; the dark line is the median, the charge that splits the people in half" : ""}.</HowTo></div>
+      </section>
+
+      <section className="block">
+        <h2>Charges against age and BMI</h2>
+        <p className="sub">Every person is a dot. This describes the file only; it does not say how any sampling method will behave.</p>
+        <div className="opts">
+          <Toggle label="Horizontal axis" value={sx} onChange={setSx} options={[["age", "Age"], ["bmi", "BMI"]]} />
+          <label className="inl">Colour by <select value={scol} onChange={(e) => setScol(e.target.value)} style={{ font: "inherit", padding: "4px 6px", borderRadius: 6 }}><option value="none">nothing</option>{GROUP_COLUMNS.map((c) => <option key={c}>{c}</option>)}</select></label>
+        </div>
+        <div className="chart">
+          <SaveBtn name={"charges-by-" + sx} />
+          <ScatterByColumn xs={sx === "age" ? population.ages : population.bmi} ys={population.values} top={TOP} xLabel={sx === "age" ? "age (years)" : "BMI (kg/m²)"}
+            groups={scol === "none" ? null : population.groups[scol]} colors={scol === "none" ? {} : Object.fromEntries(groupCounts[scol].map(([g], i) => [g, SLOTS[i % SLOTS.length]]))} />
+          {scol !== "none" && <div className="legend">{groupCounts[scol].map(([g], i) => <span key={g}><span className="sw" style={{ background: SLOTS[i % SLOTS.length] }} />{g}</span>)}</div>}
+          <HowTo>Each dot is one person. Higher means higher charges. {scol === "none" ? "Choose a column above to colour the dots by group." : `Dots are coloured by ${scol}, so you can see whether the groups sit in different places.`}</HowTo>
+        </div>
       </section>
 
       <section className="block">
@@ -346,7 +366,7 @@ function ExploreTab() {
             </section>
           )}
 
-          <DrawMore method={method} n={nn} seed={seed} strataCol={strataCol} first={sample.estimate} trueMean={TRUE_MEAN} />
+          <DrawMore method={method} n={nn} seed={seed} strataCol={strataCol} first={sample.estimate} firstIdx={idx} trueMean={TRUE_MEAN} />
 
           <SideBySide methodA={method} n={nn} seed={seed} strataCol={strataCol} sampleA={sample} view={view} markers={markers} />
 

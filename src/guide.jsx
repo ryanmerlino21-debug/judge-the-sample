@@ -172,6 +172,69 @@ export function GuideTab() {
         <h2>Reading bias, SD and RMSE</h2>
         <MeasuresPanel />
       </section>
+      <SelfChecks />
     </>
+  );
+}
+
+// ---------------------------------------------------------------- self-checks of the sampling code (pass/fail only)
+const distinctInRange = (idx, n, limit = N) => idx.length === n && new Set(idx).size === n && idx.every((i) => i >= 0 && i < limit);
+function runChecks() {
+  const checks = [];
+  const add = (name, fn) => { let pass = false, note = ""; try { pass = fn() === true; } catch (e) { note = e.message; } checks.push({ name, pass, note }); };
+  const pop = population, groupCols = ["age_band", "region", "smoker", "sex"];
+
+  add("Simple random sampling gives exactly n distinct rows (n = 1, 10, 100, 777)", () => [1, 10, 100, 777].every((n, k) => distinctInRange(S.srsIndices(N, n, S.makeRng(100 + k)), n)));
+  add("Systematic sampling gives exactly n distinct rows for every tested n, including n that do not divide N (1, 10, 100, 333, 1338)", () => [1, 10, 100, 333, 1338].every((n, k) => distinctInRange(S.systematicIndices(N, n, S.makeRng(200 + k)).indices, n)));
+  add("Whole-number systematic interval follows r, r + k, r + 2k (N = 20, n = 5, r = 3)", () => JSON.stringify(S.systematicWholeRows(20, 5, 3)) === JSON.stringify([3, 7, 11, 15, 19]));
+  add("Fractional systematic design never produces a row past N (every N and n up to 40)", () => {
+    for (let n0 = 1; n0 <= 40; n0++) for (let n = 1; n <= n0; n++) if (!distinctInRange(S.systematicIndices(n0, n, S.makeRng(n0 * 41 + n)).indices, n, n0)) return false;
+    return true;
+  });
+  add("Stratified allocation: whole numbers, total n, at least 1 per group, never above the group size (every group column; n = 10, 100, 500)", () => groupCols.every((c) => {
+    const sizes = S.strataOf(pop.groups[c]).map((x) => x.size);
+    return [10, 100, 500].every((n) => { const a = S.proportionalAllocation(sizes, n); return a.reduce((t, x) => t + x, 0) === n && a.every((x, h) => Number.isInteger(x) && x >= 1 && x <= sizes[h]); });
+  }));
+  add("Stratum weights (group size ÷ N) add up to 1 for every group column", () => groupCols.every((c) => Math.abs(S.strataOf(pop.groups[c]).reduce((t, x) => t + x.size / N, 0) - 1) < 1e-12));
+  add("The same seed and settings reproduce the same sample and estimate (all three methods)", () => ["srs", "systematic", "stratified"].every((m) => {
+    const a = S.drawOne(m, pop, 100, 2026, "smoker"), b = S.drawOne(m, pop, 100, 2026, "smoker");
+    return JSON.stringify(a.indices) === JSON.stringify(b.indices) && a.estimate === b.estimate;
+  }));
+  add("The modified copy only reorders rows: same values, true mean unchanged, original data not altered", () => {
+    const before = JSON.stringify(pop.values), tm = S.trueMean(pop.values);
+    const m = S.spaceRows(pop, { col: "smoker", value: "yes", count: 100, interval: N / 100 });
+    const a = [...m.values].sort((x, y) => x - y), b = [...pop.values].sort((x, y) => x - y);
+    return a.every((v, i) => v === b[i]) && Math.abs(S.trueMean(m.values) - tm) < 1e-9 && JSON.stringify(pop.values) === before;
+  });
+  add("Repeated sampling: one estimate per repetition, and RMSE² = bias² + SD² (quick 100-repetition run)", () => {
+    const r = S.repeatedResult({ method: "srs", pop, n: 10, reps: 100, seed: 7 });
+    return r.estimates.length === 100 && Math.abs(r.rmse ** 2 - (r.bias ** 2 + r.sd ** 2)) < 1e-6;
+  });
+  add("Exact enumeration lists each of the k starts once (systematic, n = 1, so k = 1,338)", () => {
+    const r = S.repeatedResult({ method: "systematic", pop, n: 1, reps: 100, seed: 1 });
+    return r.type === "exact" && r.count === N && r.estimates.length === N;
+  });
+  add("Population loaded correctly: 1,338 rows, and every charge is a number", () => N === 1338 && pop.values.every((v) => Number.isFinite(v)));
+  return checks;
+}
+
+export function SelfChecks() {
+  const [res, setRes] = useState(null);
+  const passed = res ? res.filter((c) => c.pass).length : 0;
+  return (
+    <section className="block">
+      <h2>Check the sampling code yourself</h2>
+      <p className="sub">These checks run in your browser on the real data and the same code the experiments use. They test the rules of the code (distinct rows, allocations that add up, reproducibility, and so on). They do not run or report any experiment result.</p>
+      <div className="actions" style={{ marginTop: 0 }}>
+        <button type="button" className="btn" onClick={() => setRes(runChecks())}>{res ? "Run the checks again" : "Run the checks"}</button>
+        {res && <span className="small" style={{ alignSelf: "center" }} role="status"><b>{passed} of {res.length}</b> checks passed.</span>}
+      </div>
+      {res && (
+        <table style={{ marginTop: 12 }}>
+          <thead><tr><th style={{ width: 80 }}>Result</th><th>Check</th></tr></thead>
+          <tbody>{res.map((c) => <tr key={c.name}><td><b style={{ color: c.pass ? "var(--s3)" : "#b3261e" }}>{c.pass ? "✓ Pass" : "✗ Fail"}</b></td><td>{c.name}{c.note ? <span className="small muted"> ({c.note})</span> : null}</td></tr>)}</tbody>
+        </table>
+      )}
+    </section>
   );
 }

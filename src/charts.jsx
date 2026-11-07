@@ -447,7 +447,8 @@ export function BiasSpreadDiagram() {
 }
 
 // ---- 5. Simple histogram (population tab).
-export function SimpleHistogram({ values, trueMean, top, binWidth = 2500, median = null }) {
+export function SimpleHistogram({ values, trueMean, top, binWidth = 2500, median = null, logScale = false }) {
+  if (logScale) return <LogHistogram values={values} trueMean={trueMean} median={median} top={top} />;
   const W = 900, H = 200, L = 12, R = 12, T = 28, B = 28, bins = Math.max(1, Math.round(top / binWidth));
   const w = top / bins, bw = (W - L - R) / bins;
   const c = new Array(bins).fill(0);
@@ -471,6 +472,78 @@ export function SimpleHistogram({ values, trueMean, top, binWidth = 2500, median
         </g>
       )}
       {niceTicks(0, top, 7).map((t) => <text key={t} x={x(t)} y={H - 8} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>)}
+    </svg>
+  );
+}
+
+// Histogram on a log (multiplicative) dollar axis: each step right multiplies the charge.
+function LogHistogram({ values, trueMean, median, top }) {
+  const W = 900, H = 200, L = 12, R = 12, T = 28, B = 28, bins = 30;
+  const lo = Math.log10(1000), hi = Math.log10(Math.max(top, 70000));
+  const x = (v) => L + ((Math.log10(Math.max(v, 1)) - lo) / (hi - lo)) * (W - L - R);
+  const bw = (W - L - R) / bins, c = new Array(bins).fill(0);
+  values.forEach((v) => { const b = Math.floor(((Math.log10(Math.max(v, 1)) - lo) / (hi - lo)) * bins); c[Math.min(bins - 1, Math.max(0, b))]++; });
+  const max = Math.max(...c, 1);
+  const edge = (b) => 10 ** (lo + (b / bins) * (hi - lo));
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Histogram of all charges on a log dollar axis">
+      {c.map((n, b) => (
+        <rect key={b} x={L + b * bw + 1} width={bw - 2} y={T + (H - T - B) * (1 - n / max)} height={(H - T - B) * (n / max)} rx="2" style={fill("var(--pop)")}>
+          <title>{`${money0(edge(b))} to ${money0(edge(b + 1))}: ${n} people`}</title>
+        </rect>
+      ))}
+      <line x1={L} x2={W - R} y1={H - B} y2={H - B} strokeWidth="1" style={stroke("var(--axis)")} />
+      <line x1={x(trueMean)} x2={x(trueMean)} y1={T - 4} y2={H - B} strokeWidth="2" strokeDasharray="6 4" style={stroke("var(--truec)")} />
+      <text x={x(trueMean) + 8} y={T - 10} fontSize="12" fontWeight="600" style={fill("var(--ink2)")}>True mean {money0(trueMean)}</text>
+      {median != null && (
+        <g>
+          <line x1={x(median)} x2={x(median)} y1={T - 4} y2={H - B} strokeWidth="2" style={stroke("var(--ink)")} />
+          <text x={x(median) - 8} y={T - 10} fontSize="12" fontWeight="600" textAnchor="end" style={fill("var(--ink)")}>Median {money0(median)}</text>
+        </g>
+      )}
+      {[1000, 2000, 5000, 10000, 20000, 50000].map((t) => <text key={t} x={x(t)} y={H - 8} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{moneyK(t)}</text>)}
+    </svg>
+  );
+}
+
+// Every person as a dot: x = age or BMI, y = charges, coloured by a group column.
+export function ScatterByColumn({ xs, ys, groups, colors, xLabel, top }) {
+  const F = useFill();
+  const W = 900, H = 340, L = 56, R = 16, T = 14, B = 44;
+  const xlo = Math.floor(Math.min(...xs) / 5) * 5, xhi = Math.ceil(Math.max(...xs) / 5) * 5;
+  const X = (v) => L + ((v - xlo) / (xhi - xlo || 1)) * (W - L - R), Y = (v) => T + (H - T - B) * (1 - v / top);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Charges against ${xLabel} for every person`}>
+      <PatternDefs />
+      {niceTicks(0, top, 4).map((t) => (
+        <g key={t}>
+          <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} strokeWidth="1" style={stroke("var(--grid)")} />
+          <text x={L - 8} y={Y(t) + 4} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>{moneyK(t)}</text>
+        </g>
+      ))}
+      {niceTicks(xlo, xhi, 6).map((t) => <text key={t} x={X(t)} y={H - B + 18} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>{t}</text>)}
+      <line x1={L} x2={W - R} y1={H - B} y2={H - B} strokeWidth="1" style={stroke("var(--axis)")} />
+      {xs.map((v, i) => <circle key={i} cx={X(v)} cy={Y(ys[i])} r="2.8" style={fill(groups ? colors[groups[i]] : "var(--accent)")} opacity="0.6" />)}
+      <text x={(L + W - R) / 2} y={H - 8} fontSize="11.5" textAnchor="middle" style={fill("var(--ink2)")}>{xLabel}</text>
+      <text x={L - 8} y={10} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>charges</text>
+    </svg>
+  );
+}
+
+// How often each person was picked across several draws (one square per person, in file order).
+export function FrequencyGrid({ counts, draws }) {
+  const n = counts.length, cols = 62, rows = Math.ceil(n / cols), W = 900, gap = 2.5, cell = (W - gap * (cols - 1)) / cols, H = rows * (cell + gap) - gap;
+  const max = Math.max(...counts, 1);
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 22}`} role="img" aria-label={`How often each of ${n} people was picked across ${draws} draws`}>
+      {counts.map((c, i) => (
+        <rect key={i} x={(i % cols) * (cell + gap)} y={Math.floor(i / cols) * (cell + gap)} width={cell} height={cell} rx="3" style={fill(c ? ACCENT : "var(--pop)")} opacity={c ? 0.2 + 0.8 * (c / max) : 0.35}>
+          <title>{`Row ${i + 1}: picked in ${c} of ${draws} draws`}</title>
+        </rect>
+      ))}
+      <text x="0" y={H + 16} fontSize="11" style={fill("var(--muted)")}>row 1</text>
+      <text x={W / 2} y={H + 16} fontSize="11" textAnchor="middle" style={fill("var(--muted)")}>read left to right, top to bottom, in file order →</text>
+      <text x={W} y={H + 16} fontSize="11" textAnchor="end" style={fill("var(--muted)")}>row {n.toLocaleString()}</text>
     </svg>
   );
 }

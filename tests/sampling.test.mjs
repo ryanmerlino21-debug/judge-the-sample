@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import * as S from "../src/sampling.js";
+import { ledgerRows, cells, HEAD } from "../src/ledger.js";
 
 const syn = (N) => Array.from({ length: N }, (_, i) => (i * 37) % 101 + i / 7);
 const popOf = (values, g) => ({ values, groups: { g } });
@@ -182,4 +183,26 @@ test("quantile: known percentiles (used for the shaded middle-90% band)", () => 
   assert.equal(S.quantile(xs, 0.05), 5);
   assert.equal(S.quantile(xs, 0.95), 95);
   assert.equal(S.quantile(xs, 0.5), 50);
+});
+
+test("ledger: rows match the DECISIONS.md table columns, exact rows have no seed, modified rows carry the control values", () => {
+  const N = 60, values = Array.from({ length: N }, (_, i) => (i * 37) % 101 + i / 7);
+  const pop = { values, groups: { g: Array.from({ length: N }, (_, i) => (i % 3 === 0 ? "a" : "b")) } };
+  const mk = (method, n, label) => ({ label, ...S.repeatedResult({ method, pop, n, reps: 100, seed: 9, strataCol: "g" }) });
+  const data = {
+    methods: { results: [mk("srs", 10), mk("systematic", 10)] },
+    size: null,
+    challenge: { count: 5, col: "g", value: "a", k: 6, results: [mk("srs", 10, "baseline"), mk("srs", 10, "modified")] },
+  };
+  const rows = ledgerRows(data);
+  assert.equal(rows.length, 4);
+  rows.forEach((x) => {
+    const c = cells(x);
+    assert.equal(c.length, HEAD.length);
+    assert.ok(Math.abs(Number(c[11]) - Math.hypot(Number(c[9]), Number(c[10]))) < 0.02);   // RMSE = sqrt(bias^2 + SD^2), allowing for rounding to cents
+  });
+  assert.equal(cells(rows[1])[4], "exact");                          // N = 60, n = 10 -> whole-number interval, no seed
+  assert.equal(cells(rows[0])[4], 9);
+  assert.ok(cells(rows[3])[3].includes("top 5 g = a rows spaced every 6.00 rows"));
+  assert.ok(!cells(rows[2])[3].includes("top 5"));
 });

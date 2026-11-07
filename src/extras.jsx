@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NavContext } from "./ctx.js";
 import { population } from "./data.js";
 import * as S from "./sampling.js";
-import { RowBars, StripRow, RunningMean, BiasSpreadDiagram, ACCENT, money, money0, signed } from "./charts.jsx";
+import { RowBars, StripRow, RunningMean, BiasSpreadDiagram, FrequencyGrid, ACCENT, money, money0, signed } from "./charts.jsx";
 
 const N = population.values.length;
 const METHOD_NAMES = { srs: "Simple random", systematic: "Systematic", stratified: "Stratified" };
@@ -169,19 +169,26 @@ const domainOf = (xs, tm) => {
   return [Math.max(0, lo - pad), hi + pad];
 };
 
-export function DrawMore({ method, n, seed, strataCol, first, trueMean }) {
+export function DrawMore({ method, n, seed, strataCol, first, firstIdx, trueMean }) {
   const [extra, setExtra] = useState(0);
   const [view, setView] = useState("dots");
   useEffect(() => { setExtra(0); }, [method, n, seed, strataCol]);
 
-  const draws = useMemo(() => {
-    const out = [first];
+  const drawn = useMemo(() => {
+    const out = [{ est: first, idx: firstIdx }];
     for (let j = 1; j <= extra; j++) {
       // draw j uses its own seed derived from the seed shown above, so the whole sequence is reproducible
-      out.push(S.drawOne(method, population, n, (seed + 1000003 * j) >>> 0, strataCol).estimate);
+      const d = S.drawOne(method, population, n, (seed + 1000003 * j) >>> 0, strataCol);
+      out.push({ est: d.estimate, idx: d.indices });
     }
     return out;
-  }, [method, n, seed, strataCol, extra, first]);
+  }, [method, n, seed, strataCol, extra, first, firstIdx]);
+  const draws = useMemo(() => drawn.map((d) => d.est), [drawn]);
+  const counts = useMemo(() => {
+    const c = new Array(N).fill(0);
+    drawn.forEach((d) => d.idx.forEach((i) => { c[i]++; }));
+    return c;
+  }, [drawn]);
 
   const m = S.mean(draws);
   const sd = Math.sqrt(S.mean(draws.map((x) => (x - m) ** 2)));
@@ -198,15 +205,23 @@ export function DrawMore({ method, n, seed, strataCol, first, trueMean }) {
           <button className="btn ghost" onClick={() => add(10)}>Draw 10 more</button>
           <button className="btn ghost" onClick={() => add(100)}>Draw 100 more</button>
           <button className="btn ghost" onClick={() => setExtra(0)} disabled={extra === 0}>Back to one sample</button>
-          <Toggle label="View" value={view} onChange={setView} options={[["dots", "Each estimate"], ["running", "Running average"]]} />
+          <Toggle label="View" value={view} onChange={setView} options={[["dots", "Each estimate"], ["running", "Running average"], ["picked", "How often each person was picked"]]} />
         </div>
         {view === "dots" ? (
           <StripRow estimates={draws} domain={domainOf(draws, trueMean)} trueMean={trueMean} meanOfEstimates={m} axis tickSize={8.5} label={`${draws.length} estimates from ${draws.length} samples`} />
-        ) : (
+        ) : view === "running" ? (
           <RunningMean draws={draws} trueMean={trueMean} />
+        ) : (
+          <FrequencyGrid counts={counts} draws={draws.length} />
         )}
         <div className="legend">
-          {view === "dots" ? (
+          {view === "picked" ? (
+            <>
+              <span><span className="sw sq" style={{ background: "var(--pop)", opacity: 0.4 }} />never picked so far</span>
+              <span><span className="sw sq" style={{ background: ACCENT, opacity: 0.35 }} />picked in a few draws</span>
+              <span><span className="sw sq" style={{ background: ACCENT }} />picked in the most draws</span>
+            </>
+          ) : view === "dots" ? (
             <>
               <span><span className="sw" style={{ background: ACCENT, opacity: 0.5 }} />one dot = one sample's estimate</span>
               <span><span className="key" style={{ borderTop: 0, width: 3, height: 12, background: "var(--ink)", borderRadius: 2 }} /> mean of the estimates so far</span>
@@ -214,11 +229,13 @@ export function DrawMore({ method, n, seed, strataCol, first, trueMean }) {
           ) : (
             <span><span className="key" /> average of all draws so far</span>
           )}
-          <span><span className="key dash" /> true mean {money(trueMean)}</span>
+          {view !== "picked" && <span><span className="key dash" /> true mean {money(trueMean)}</span>}
         </div>
         <HowTo>{view === "dots"
           ? <>Each dot is the estimate from one separate sample of {n} {n === 1 ? "person" : "people"}. The black tick is the average of the dots so far and the gold dashed line is the true mean of everyone. Dots far apart mean the estimates vary a lot from sample to sample.</>
-          : <>The line shows the average of all the estimates drawn so far, after each new draw. The gold dashed line is the true mean of everyone. Early on the line moves a lot because it rests on few draws.</>}</HowTo>
+          : view === "running"
+          ? <>The line shows the average of all the estimates drawn so far, after each new draw. The gold dashed line is the true mean of everyone. Early on the line moves a lot because it rests on few draws.</>
+          : <>Each square is one person, in file order. A darker square means that person was picked in more of the {draws.length} {draws.length === 1 ? "draw" : "draws"} so far; a grey square was never picked. With few draws the pattern is mostly chance, and every draw picks {n} {n === 1 ? "person" : "people"}.</>}</HowTo>
         <p className="meta">
           <b>{draws.length}</b> {draws.length === 1 ? "sample" : "samples"} drawn · {METHOD_NAMES[method]}{method === "stratified" ? ` on ${strataCol}` : ""} · n = {n} · seed {seed} (draw 1 uses this seed; later draws use seeds derived from it, so the same clicks give the same dots)
           {draws.length > 1 && <> · mean of the estimates {money(m)} · SD of the estimates {money(sd)} · range {money0(Math.min(...draws))} to {money0(Math.max(...draws))}</>}
