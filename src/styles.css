@@ -89,9 +89,9 @@ body { background-color: #e9eef4;
     linear-gradient(180deg, #e4ebf3 0%, #eef2f7 100%);
   background-size: 34px 34px, 34px 34px, auto, auto, auto; background-attachment: fixed; }
 h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 700; letter-spacing: 0; }
-.banner { margin-top: 28px; border-radius: 6px; padding: 34px 38px; color: #fff; position: relative; overflow: hidden;
+.banner { margin-top: 28px; border-radius: 6px; padding: 34px 38px; color: #fff; position: relative;
   background: linear-gradient(115deg, #0e2a43 0%, #16466f 60%, #1d5a8a 100%); border-bottom: 4px solid #c9a24a; }
-.banner::after { content: ""; position: absolute; right: 0; bottom: 0; width: 46%; height: 100%; opacity: .16; pointer-events: none;
+.banner::after { content: ""; position: absolute; right: 0; bottom: 0; width: 46%; height: 100%; opacity: .16; pointer-events: none; border-radius: 0 10px 10px 0;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120' preserveAspectRatio='none'%3E%3Cg fill='white'%3E%3Crect x='6' y='30' width='14' height='90'/%3E%3Crect x='26' y='8' width='14' height='112'/%3E%3Crect x='46' y='20' width='14' height='100'/%3E%3Crect x='66' y='40' width='14' height='80'/%3E%3Crect x='86' y='58' width='14' height='62'/%3E%3Crect x='106' y='72' width='14' height='48'/%3E%3Crect x='126' y='84' width='14' height='36'/%3E%3Crect x='146' y='92' width='14' height='28'/%3E%3Crect x='166' y='100' width='14' height='20'/%3E%3Crect x='186' y='98' width='14' height='22'/%3E%3Crect x='206' y='104' width='14' height='16'/%3E%3Crect x='226' y='108' width='14' height='12'/%3E%3Crect x='246' y='110' width='14' height='10'/%3E%3Crect x='266' y='112' width='14' height='8'/%3E%3C/g%3E%3C/svg%3E") right bottom / 100% 100% no-repeat; }
 .banner .bn-text { position: relative; z-index: 1; }
 .banner h1 { font-size: 38px; line-height: 1.1; margin: 6px 0 10px; }
@@ -191,8 +191,6 @@ details.starthere { background: var(--surface); border: 1px solid var(--border);
 details.starthere summary { color: var(--ink); font-size: 16px; }
 table.cheat th, table.cheat td { vertical-align: top; min-width: 190px; } table.cheat th[scope="row"] { font-size: 12.5px; text-transform: none; letter-spacing: 0; color: var(--ink); width: 150px; min-width: 130px; }
 .bn-tools { position: absolute; top: 12px; right: 14px; display: flex; gap: 8px; z-index: 2; }
-.bn-tools button { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
-.bn-tools button:hover { background: rgba(255,255,255,.26); }
 input[type=search] { padding: 7px 9px; border: 1px solid var(--axis); border-radius: 8px; font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); min-width: 240px; }
 :root[data-theme="dark"] { color-scheme: dark; --page: #0e151c; --surface: #16212b; --ink: #e8eef4; --ink2: #b4c1cd; --muted: #8e9cab; --grid: #243241; --axis: #3a4e63; --border: rgba(255,255,255,.12); --pop: #3d5063; --accent: #5aa0f2; --s1: #5aa0f2; --s2: #e0763f; --s3: #2bb386; --s4: #d9a21f; --wash: #1c2b3a; --truec: #dcae52; --samplec: #eaf0f5; --t1: #16212b; --t2: #16212b; --t3: #16212b; --t4: #16212b; --t5: #16212b; }
 :root[data-theme="dark"] body { background-color: #0e151c; background-image: linear-gradient(rgba(120,160,200,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(120,160,200,.07) 1px, transparent 1px), radial-gradient(1000px 520px at 88% -8%, rgba(60,120,190,.22), transparent 70%), radial-gradient(800px 480px at -5% 105%, rgba(201,162,74,.10), transparent 70%), linear-gradient(180deg, #0e151c 0%, #111b24 100%); background-size: 34px 34px, 34px 34px, auto, auto, auto; }
@@ -326,3 +324,7 @@ tbody tr:nth-child(even) td, tbody tr:nth-child(even) th[scope="row"] { backgrou
 table.heat tbody tr:nth-child(even) td { background: unset; } table.cheat tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--wash) 45%, transparent); }
 .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: #0e2a43; color: #fff; padding: 10px 20px; border-radius: 99px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 40; animation: fadein .2s ease-out; max-width: calc(100vw - 32px); text-align: center; }
 @media print { .toast, .hint, .bn-chips { display: none !important; } }
+
+/* the dropdown must never be clipped: keep it above everything and inside the viewport */
+.bn-tools { z-index: 20; } .menupop { max-height: calc(100vh - 120px); overflow-y: auto; }
+.mrow b { color: var(--ink); }
